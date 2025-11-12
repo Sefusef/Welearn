@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>WeLearn</title>
+<meta name='viewport' content='width=device-width, initial-scale=1' />
+<link rel="stylesheet" href="styles.css"/>
+<style>
+#online-content {
+display: none;
+}
+</style>
+</head>
+
+<body>
+<ul class='menu'>
+<li><a href='index.html'>Home</a></li>
+<li><a href='notes.html'>Notes</a></li>
+<li><a href='model.html'>Ask AI</a></li>
+<li><a href='home.html'>Chat</a></li>
+</ul>
+<div class="box">
+<main class="main">
+<div class="container">
+<div class="div" id="online-content">
+<h1 style='text-align:center;color:red'>No internet connection!</h1>
+<p style="color:blue;font-weight:bold">To watch the videos from youtube, make sure you have connected to the internet and swipe down to reflesh</p>
+</div>
+<div class="accordion">
+<label> MICROSOFT WORD</label>
+<div class="accordion-content">
+<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/2MCmnr2L50o?si=q2F6DhC05pU1qXh1&amp;start=73" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/wbJcJCkBcMg?si=5YA1iA5KHDgJhXC_&amp;start=442" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/KqgyvGxISxk?si=4DgdYWPDdV8_U2Wq&amp;start=12" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/5ekdpZE-owg?si=ST67zzJCVfZjUmxH&amp;start=12" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+</div>
+<div class="accordion">
+<label> PYTHON TUTORIAL </label>
+<div class="accordion-content">
+<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/_uQrJ0TkZlc?si=C3OxC8tA3WsPCv6D&amp;start=12" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/rHux0gMZ3Eg?si=8SXskBYygzlCGrjj&amp;start=12" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/7eh4d6sabA0?si=jlbgGqw-dfsLos9O&amp;start=12" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+</div>
+<div class="accordion">
+<label>GEOGRAPHY FORM2</label>
+<div class="accordion-content"></div>
+</div>
+<div class="accordion">
+<label>GEOGRAPHY FORM 1 </label>
+<div class="accordion-content"></div>
+</div>
+<div class="accordion">
+<label> CHEMISTRY FORM 4 </label>
+<div class="accordion-content"></div>
+</div>
+<div class="accordion">
+<label> CHEMISTRY FORM 3</label>
+<div class="accordion-content"></div>
+</div>
+<div class="accordion">
+<label>CHEMISTRY FORM 2 </label>
+<div class="accordion-content"></div>
+</div>
+<div class="accordion">
+<label>CHEMISTRY FORM 1 </label>
+<div class="accordion-content"></div>
+</div>
+<div class="accordion">
+<label>BIOLOGY FORM 4 </label>
+<div class="accordion-content"></div>
+</div>
+<div class="accordion">
+<label> BIOLOGY FORM 3</label>
+<div class="accordion-content"></div>
+</div>
+<div class="accordion" style="display:none">
+<label> BIOLOGY FORM 2</label>
+<div class="accordion-content"></div>
+</div><br/>
+<div class='div'>
+<h1 style='text-align:center;color:red'>CONTACT US</h1>
+<a href="tel:+255687458013"> Call us</a>
+<a href="sms:+255687458013?&body=Hi We Learn!"> Text us!</a>
+<a href="https://wa.me/+255687458013">Whatsapp
+</a>
+<br/>
+<h3 style="text-align:center;color:fuchsia">&copy We Learn 2025</h3>
+</div>
+</div>
+
+</main>
+</div>
+<script>
+const onlineContent = document.getElementById('online-content');
+const accordions = document.getElementsByClassName('accordion');
+
+function updateStatus() {
+if (navigator.onLine) {
+onlineContent.style.display = 'none';
+for (const accordion of accordions) {
+accordion.style.display = 'block';
+}
+// New code to refresh iframes
+const iframes = document.getElementsByTagName('iframe');
+for (const iframe of iframes) {
+const currentSrc = iframe.src;
+iframe.src = ''; // Clear the source
+iframe.src = currentSrc; // Reset the source to force a reload
+}
+} else {
+onlineContent.style.display = 'block';
+for (const accordion of accordions) {
+accordion.style.display = 'none';
+}
+}
+}
+
+updateStatus();
+window.addEventListener('online', updateStatus);
+window.addEventListener('offline', updateStatus);</script>
+<script src="index.js"></script>
+</body>
+  </html>
