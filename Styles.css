@@ -1,0 +1,295 @@
+body {
+font-family: Arial, sans-serif;
+line-height: 1.6;
+margin: 15px;
+background-color: #abd9e9;
+color: #333;
+}
+a {
+text-decoration: none;
+}
+
+.box {
+background-image: linear-gradient(white 10%, fuchsia, silver, silver);
+border-radius: 10px;
+margin: auto;
+}
+
+.container {
+margin: auto;
+padding: 5px 5px;
+width: auto;
+height: 100%;
+}
+.menu{
+position: sticky;
+top: 0;
+overflow: hidden;
+}
+.main {
+opacity: 1;
+background: #fff;
+background-position: center;
+background-repeat: no-repeat;
+background-size: cover;
+padding: 15px;
+margin: auto;
+color: black;
+border-radius: 10px;
+-moz-box-shadow: 2px 2px 2px #888;
+-webkit-box-shadow: 2px 2px 2px #888;
+box-shadow: 2px 2px 2px #888;
+-ms-overflow-style: none; /* IE and Edge */
+scrollbar-width: none; /* Firefox */
+}
+
+.main::-webkit-scrollbar {
+display: none;
+}
+
+.div {
+background: #E0ECF8;
+opacity: 1;
+color: blue;
+text-decoration: none;
+padding: 10px;
+font-weight: bold;
+-moz-box-shadow: 2px 2px 2px #888;
+-webkit-box-shadow: 2px 2px 2px #888;
+box-shadow: 2px 2px 2px #888;
+border-radius: 10px;
+}
+ul {
+margin-bottom: 1em;
+padding-left: 20px;
+}
+.menu li,
+.button {
+display: inline-block;
+padding: 4px 4px;
+border: 1px solid #777;
+background: #ddd;
+color: #d04;
+margin-right: 8px;
+border-radius: 5px;
+-moz-box-shadow: 2px 2px 2px #888;
+-webkit-box-shadow: 2px 2px 2px #888;
+box-shadow: 2px 2px 2px #888;
+}
+
+li a,
+.button {
+text-decoration: none;
+}
+
+li a:hover,
+.button:hover {
+color: green;
+}
+
+label {
+border-bottom: 1px solid black;
+display: block;
+padding: 10px;
+color: blue;
+background: #E0ECF8;
+text-align: center;
+-moz-box-shadow: 2px 2px 2px #888;
+-webkit-box-shadow: 2px 2px 2px #888;
+box-shadow: 2px 2px 2px #888;
+cursor: pointer;
+}
+.accordion-content {
+padding: 15px;
+display: none;
+opacity: 1;
+overflow-x: hidden;
+background-color: white;
+color: black;
+}
+
+.accordion-content iframe {
+width: 100%; /* Makes the iframe responsive to its container */
+ /* Sets a maximum width */
+height: auto; /* Sets a fixed height */
+}
+
+.fm {
+background-color: cyan;
+padding: 20px;
+width: 100%;
+color: blue;
+}
+/* for the loging forms*/
+.inp {
+opacity: 1;
+font-weight: bold;
+background: white;
+border: 1px solid #ccc;
+padding: 10px;
+width: auto;
+}
+.span {
+background: #E0ECF8;
+color: red;
+padding: 10px;
+font-size: 20px;
+display: block;
+border-radius: 10px;
+box-shadow: 2px 2px 2px #888;
+}
+.signup {
+border: none;
+display: block;
+width: auto;
+padding: 20px;
+font-size: 20px;
+color: blue;
+background: #E0ECF8;
+opacity: 1;
+text-decoration: none;
+font-weight: bold;
+box-shadow: 2px 2px 2px #888;
+border-radius: 10px;
+text-align: center;
+}
+.signup-btn {
+border: none;
+display: block;
+width: auto;
+padding: 20px;
+font-size: 20px;
+color: #f00;
+background: #E0ECF8;
+opacity: 1;
+text-decoration: none;
+font-weight: bold;
+border-radius: 10px;
+text-align: center;
+}
+.signup-tgl {
+border: none;
+display: block;
+width: auto;
+padding: 20px;
+font-size: 20px;
+color: #f00;
+background: #abd9e9;
+opacity: 1;
+text-decoration: none;
+font-weight: bold;
+border-radius: 10px;
+text-align: center;
+}
+.form-message {
+margin-top: 10px;
+padding: 10px;
+border-radius: 5px;
+text-align: center;
+font-weight: bold;
+}
+.success {
+background-color: #d4edda;
+color: #155724;
+}
+.error {
+background-color: #f8d7da;
+color: #721c24;
+}
+a {
+text-decoration: none;
+}
+.hold-to-verify {
+text-align: center;
+margin: 20px 0;
+}
+.hold-btn {
+width: 150px;
+height: 50px;
+background-color: #f0f0f0;
+color: #333;
+border: 1px solid #ccc;
+border-radius: 25px;
+cursor: pointer;
+transition: all 0.2s ease-in-out;
+}
+.hold-btn:active, .hold-btn.holding {
+background-color: #28a745;
+color: white;
+transform: scale(1.05);
+}
+.hold-btn.complete {
+background-color: #28a745;
+color: white;
+cursor: default;
+}
+
+/* New CSS for the loading spinner */
+.signup {
+  position: relative; /* Needed for positioning the spinner */
+}
+
+.spinner {
+  display: none; /* Hidden by default */
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.signup.loading .spinner {
+  display: block;
+}
+
+.signup.loading {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  color: #666666;
+}
+
+/* Animation for the spinner */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+/* for the loging forms*/
+/* ... existing styles ... */
+
+/* New CSS for the loading spinner */
+.signup {
+  position: relative;
+}
+
+/* ... existing spinner and animation styles ... */
+
+/* New CSS for the Chatbot Loading Indicator */
+#chtl-inline-bot-loading {
+    display: none; /* JS manages initial visibility */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent white overlay */
+    z-index: 1000;
+    border-radius: 10px; /* Matches container border-radius */
+}
+
+.chat-spinner {
+    border: 5px solid #f3f3f3; /* Light grey */
+    border-top: 5px solid #3498db; /* Blue (A common loading color) */
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
