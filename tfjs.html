@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TensorFlow.js QnA Demo (CDN)</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script> 
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/qna"></script>
+    
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+        h1 { color: #2C3E50; }
+        textarea { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { background-color: #3498DB; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #2980B9; }
+        #output { margin-top: 20px; padding: 15px; border: 1px solid #ddd; background-color: #ECF0F1; border-radius: 5px; }
+        .label { font-weight: bold; margin-bottom: 5px; display: block; }
+    </style>
+</head>
+<body>
+    <h1>🧠 Question Answering with MobileBERT</h1>
+    <p>This model searches the **Passage (Context)** for the answer to the **Question**.</p>
+    
+    <label for="passage" class="label">Passage (Your Notes):</label>
+    <textarea id="passage" rows="7">
+        The earliest known use of the word 'robot' was in the Czech play R.U.R. (Rossum's Universal Robots) by Karel Čapek in 1920. The word comes from the Czech word 'robota', meaning forced labor. The play explored themes of mass production and the potential dangers of artificial beings gaining sentience. The first digital computer, the Atanasoff–Berry Computer (ABC), was built by John Atanasoff and Clifford Berry between 1937 and 1942 at Iowa State University.
+    </textarea>
+
+    <label for="question" class="label">Question:</label>
+    <textarea id="question" rows="2">Where does the word robot come from?</textarea>
+    
+    <button onclick="runQNA()">Find Answer</button>
+
+    <div id="output-section">
+        <h2 style="margin-top: 30px;">Best Answer:</h2>
+        <div id="output">
+            Click 'Find Answer' to start. The model will load on the first click.
+        </div>
+    </div>
+
+    <script>
+        // qna and tf are globally available thanks to the script tags above
+        let qnaModel = null; 
+
+        // Main function to run the model
+        async function runQNA() {
+            const outputElement = document.getElementById('output');
+            outputElement.innerText = "⏳ Loading model (50MB download) and searching... This may take a moment on the first run.";
+
+            // 1. Load the QnA Model
+            if (qnaModel === null) {
+                // This line triggers the 40-50MB download
+                qnaModel = await qna.load(); 
+            }
+            
+            const questionText = document.getElementById('question').value;
+            const passageText = document.getElementById('passage').value;
+
+            // 2. Run the Inference
+            outputElement.innerText = "Searching for answer...";
+            
+            const answers = await qnaModel.findAnswers(questionText, passageText);
+
+            // 3. Display Results
+            if (answers.length > 0) {
+                const bestAnswer = answers[0];
+                outputElement.innerHTML = `
+                    **Answer:** **${bestAnswer.text}**<br>
+                    Confidence Score: ${bestAnswer.score.toFixed(4)}
+                `;
+            } else {
+                outputElement.innerText = "Sorry, the model couldn't find a direct answer in the passage.";
+            }
+        }
+    </script>
+</body>
+</html>
