@@ -293,3 +293,19 @@ cursor: default;
     left: 50%;
     transform: translate(-50%, -50%);
 }
+/* Styles for the contact icons */
+.contact-icons a {
+    font-size: 30px; /* Make the icons a nice size */
+    margin: 0 10px;
+    text-decoration: none;
+    display: inline-block;
+}
+.call-icon { 
+    color: green; 
+}
+.text-icon { 
+    color: orange; 
+}
+.whatsapp-icon { 
+    color: #25D366; /* Standard WhatsApp color */
+  }
