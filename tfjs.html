@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transformers.js Local Quiz Generator</title>
+    <title>Transformers.js CDN Quiz Generator</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -18,14 +18,15 @@
     <script type="module">
         import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.0';
         window.pipeline = pipeline;
-        window.LOCAL_MODEL_PATH = './models/distilbart'; // <-- Define the local path here
+        // The model name is used here; the pipeline will fetch files from the CDN.
+        window.MODEL_NAME = 'Xenova/distilbart-cnn-6-6'; 
     </script>
 </head>
 <body class="p-4 md:p-8 min-h-screen flex flex-col items-center">
 
     <div class="w-full max-w-4xl">
         <h1 class="text-4xl font-extrabold text-gray-900 mb-2 text-center">In-Browser Quiz Generator</h1>
-        <p class="text-center text-gray-600 mb-8">Model assets are loaded locally from the repository.</p>
+        <p class="text-center text-gray-600 mb-8">Model assets are loading from a **CDN** on first run.</p>
     </div>
 
     <div class="w-full max-w-4xl bg-white p-6 md:p-10 rounded-xl card mb-8">
@@ -50,7 +51,7 @@
     <div id="model-loading" class="w-full max-w-4xl bg-yellow-50 p-6 md:p-10 rounded-xl card flex flex-col items-center justify-center text-center">
         <div class="loader w-12 h-12 border-8 border-yellow-200 rounded-full mb-4"></div>
         <p class="text-xl font-semibold text-yellow-800">Initializing AI Model...</p>
-        <p class="text-sm text-yellow-700 mt-2">The model files are loading locally. This may take a few seconds on first run due to **WebAssembly compilation**.</p>
+        <p class="text-sm text-yellow-700 mt-2">This is the **first load** and requires downloading the model weights (approx 300MB) from the CDN. Time depends on your network speed.</p>
     </div>
 
 
@@ -73,13 +74,13 @@
             try {
                 modelLoadingIndicator.classList.remove('hidden');
                 
-                // --- CRITICAL CHANGE: Loading from the local path ---
+                // --- CRITICAL CHANGE: Loading from the CDN using the model name ---
                 summarizationPipeline = await pipeline(
                     'summarization', 
-                    window.LOCAL_MODEL_PATH // <-- Uses the local path defined in the script tag
+                    window.MODEL_NAME // <-- Uses the external CDN path
                 );
                 
-                console.log("Model initialized successfully from local assets.");
+                console.log("Model initialized successfully from CDN.");
                 isProcessing = false;
                 modelLoadingIndicator.classList.add('hidden');
                 setUIState(false);
@@ -87,7 +88,7 @@
             } catch (error) {
                 console.error("Failed to load model:", error);
                 // Prompt user to check setup instructions if load fails
-                showNotification(`CRITICAL ERROR: Failed to load model. Did you set up the '/models/distilbart' folder correctly? Check console (F12).`, 'red');
+                showNotification(`CRITICAL ERROR: Failed to load model. Ensure you are running this file via a local web server (http://localhost). Check console (F12).`, 'red');
                 isProcessing = false;
                 modelLoadingIndicator.classList.add('hidden');
                 setUIState(false);
@@ -245,3 +246,4 @@
 
 </body>
 </html>
+```eof
