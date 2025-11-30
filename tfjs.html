@@ -3,82 +3,266 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transformers.js Sentiment Analysis</title>
-    
+    <title>Transformers.js Quiz Generator</title>
+    <!-- Load Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for better aesthetics */
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fc; }
+        .card { box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); }
+        .loader { border-top-color: #3b82f6; -webkit-animation: spin 1s linear infinite; animation: spin 1s linear infinite; }
+        @-webkit-keyframes spin { 0% { -webkit-transform: rotate(0deg); } 100% { -webkit-transform: rotate(360deg); } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+    <!-- Load the transformers.js library from Xenova CDN -->
     <script type="module">
-        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers';
+        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.0';
+        window.pipeline = pipeline;
+    </script>
+</head>
+<body class="p-4 md:p-8 min-h-screen flex flex-col items-center">
 
-        // Global variable to hold the loaded model pipeline
-        let sentimentPipeline = null; 
+    <div class="w-full max-w-4xl">
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-2 text-center">In-Browser Quiz Generator</h1>
+        <p class="text-center text-gray-600 mb-8">Uses `transformers.js` to summarize text and create a True/False quiz from key facts.</p>
+    </div>
 
-        // --- 2. Load the Model ---
-        // This function loads the model on the first button click
-        async function loadModel() {
-            if (sentimentPipeline === null) {
-                const outputEl = document.getElementById('output');
-                outputEl.innerHTML = "<h4>⏳ Loading model (approx. 60MB download)... Please wait.</h4>";
+    <div class="w-full max-w-4xl bg-white p-6 md:p-10 rounded-xl card mb-8">
+        <label for="context-input" class="block text-lg font-semibold text-gray-700 mb-3">1. Enter Passage (Context):</label>
+        <textarea id="context-input" rows="8" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150" placeholder="Paste a Wikipedia article, a chapter summary, or any educational text here. The AI will extract the facts."></textarea>
+
+        <div class="flex justify-end mt-6">
+            <button id="generate-button" class="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300 active:bg-blue-800 flex items-center disabled:opacity-50" onclick="generateQuiz()">
+                <svg id="generate-icon" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <div id="button-text">Generate Quiz</div>
+                <div id="loader" class="loader w-5 h-5 border-4 border-gray-100 rounded-full hidden ml-2"></div>
+            </button>
+        </div>
+    </div>
+
+    <div id="quiz-output" class="w-full max-w-4xl bg-white p-6 md:p-10 rounded-xl card hidden">
+        <h2 class="text-3xl font-bold text-gray-900 mb-6 border-b pb-2">2. Generated Quiz (True/False)</h2>
+        <div id="quiz-questions">
+            <!-- Quiz items will be inserted here -->
+        </div>
+    </div>
+
+    <!-- Initial Loading State for the Model -->
+    <div id="model-loading" class="w-full max-w-4xl bg-yellow-50 p-6 md:p-10 rounded-xl card flex flex-col items-center justify-center text-center">
+        <div class="loader w-12 h-12 border-8 border-yellow-200 rounded-full mb-4"></div>
+        <p class="text-xl font-semibold text-yellow-800">Initializing AI Model...</p>
+        <p class="text-sm text-yellow-700 mt-2">This may take a moment on the first load as the required files are downloaded (approx 50MB).</p>
+    </div>
+
+
+    <script>
+        const contextInput = document.getElementById('context-input');
+        const generateButton = document.getElementById('generate-button');
+        const buttonText = document.getElementById('button-text');
+        const loader = document.getElementById('loader');
+        const quizOutput = document.getElementById('quiz-output');
+        const quizQuestions = document.getElementById('quiz-questions');
+        const modelLoadingIndicator = document.getElementById('model-loading'); // New element reference
+
+        // Initial text for a runnable demo
+        contextInput.value = `The planet Mars is often called the Red Planet because of its reddish appearance, which is caused by iron oxide, or rust, on its surface. It is the fourth planet from the Sun and the second smallest in the Solar System after Mercury. Mars is a terrestrial planet with a thin atmosphere. Its notable features include Olympus Mons, the largest volcano and highest known mountain in the Solar System, and Valles Marineris, one of the largest canyon systems. The rotation period and seasonal cycles of Mars are also similar to those of Earth, which has led to intense study regarding its potential to harbor past or present life.`;
+
+        let summarizationPipeline = null;
+        let isProcessing = true; // Start in processing/loading state
+
+        // Function to initialize the model (runs only once)
+        async function initializeModel() {
+            try {
+                // Show loading indicator
+                modelLoadingIndicator.classList.remove('hidden');
                 
-                // Initialize the sentiment analysis pipeline. 
-                // It automatically selects an optimized model for the task.
-                sentimentPipeline = await pipeline('sentiment-analysis', 'Xenova/distilbert-base-uncased-finetuned-sst-2-english');
+                // Load a summarization model. 
+                summarizationPipeline = await pipeline(
+                    'summarization', 
+                    'Xenova/distilbart-cnn-6-6'
+                );
                 
-                outputEl.innerHTML = "<h4>✅ Model Loaded. Enter text and click Analyze!</h4>";
-                document.getElementById('analyzeButton').removeAttribute('disabled');
+                console.log("Model initialized successfully.");
+                isProcessing = false;
+                modelLoadingIndicator.classList.add('hidden'); // Hide loading indicator
+                setUIState(false); // Enable the button
+                
+            } catch (error) {
+                console.error("Failed to load model:", error);
+                showNotification(`Error: Could not load the model. Check your console for details.`, 'red');
+                isProcessing = false;
+                modelLoadingIndicator.classList.add('hidden');
+                setUIState(false);
             }
         }
+
+        // Debounced initialization to avoid multiple loads if button is clicked quickly
+        const debouncedInitialize = (function() {
+            let timeout;
+            return function(func, delay) {
+                clearTimeout(timeout);
+                timeout = setTimeout(func, delay);
+            };
+        })();
+
+        // Start initialization on window load (with a slight delay)
+        window.onload = () => {
+             // Set the initial state while waiting for the model
+             setUIState(true); 
+             debouncedInitialize(initializeModel, 100);
+        };
         
-        // --- 3. Run Inference ---
-        window.analyzeSentiment = async function() {
-            const inputText = document.getElementById('inputText').value;
-            const outputEl = document.getElementById('output');
+
+        function setUIState(processing) {
+            isProcessing = processing;
             
-            if (!inputText || inputText.trim() === '') {
-                outputEl.innerHTML = "<p>Please enter some text to analyze.</p>";
-                return;
-            }
+            // Only enable the button if the model is loaded AND we are not processing a query
+            const canGenerate = summarizationPipeline !== null && !processing; 
 
-            outputEl.innerHTML = "<p>🔍 Analyzing sentiment...</p>";
+            generateButton.disabled = !canGenerate || !contextInput.value.trim();
+            loader.classList.toggle('hidden', !processing);
+            buttonText.textContent = processing ? (summarizationPipeline ? 'Analyzing...' : 'Loading...') : 'Generate Quiz';
+            
+            // Style changes for clarity
+            generateButton.classList.toggle('bg-blue-600', canGenerate);
+            generateButton.classList.toggle('bg-gray-500', !canGenerate);
+            generateButton.classList.toggle('hover:bg-blue-700', canGenerate);
+        }
 
-            // Run the input through the pipeline
-            const startTime = performance.now();
-            const result = await sentimentPipeline(inputText);
-            const endTime = performance.now();
+        function showNotification(message, color) {
+            // Simple display of a message instead of alert()
+            const notification = document.createElement('div');
+            notification.className = `p-4 mb-4 text-sm rounded-xl text-white font-medium shadow-md ${color === 'red' ? 'bg-red-500' : 'bg-green-500'}`;
+            notification.textContent = message;
+            
+            const parent = quizOutput.parentElement;
+            parent.insertBefore(notification, quizOutput);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
 
-            const label = result[0].label;
-            const score = result[0].score;
-            const time = (endTime - startTime).toFixed(2);
+        function createQuizItem(index, statement, isTrue) {
+            const statementHtml = isTrue 
+                ? statement 
+                : generateFalseStatement(statement); // Simple reversal for 'False'
 
-            // Display results
-            outputEl.innerHTML = `
-                <p><strong>Result:</strong> ${label}</p>
-                <p><strong>Confidence:</strong> ${score.toFixed(4)}</p>
-                <p>Inference Time: ${time} ms</p>
+            return `
+                <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <p class="font-semibold text-gray-800 mb-3 flex items-start">
+                        <span class="text-lg mr-3 text-blue-600">${index}.</span>
+                        ${statementHtml}
+                    </p>
+                    <div class="flex space-x-4">
+                        <label class="inline-flex items-center text-gray-600 cursor-pointer hover:text-gray-900 transition">
+                            <input type="radio" name="q${index}" value="true" class="form-radio h-4 w-4 text-blue-600" disabled>
+                            <span class="ml-2">True</span>
+                        </label>
+                        <label class="inline-flex items-center text-gray-600 cursor-pointer hover:text-gray-900 transition">
+                            <input type="radio" name="q${index}" value="false" class="form-radio h-4 w-4 text-blue-600" disabled>
+                            <span class="ml-2">False</span>
+                        </label>
+                    </div>
+                    <p class="mt-2 text-sm text-gray-500">
+                        <span class="font-bold">Correct Answer:</span> 
+                        <span class="${isTrue ? 'text-green-600' : 'text-red-600'}">${isTrue ? 'True' : 'False'}</span>
+                    </p>
+                </div>
             `;
         }
 
-        // Load the model immediately when the page loads
-        loadModel();
+        // Simple heuristic to create a false statement from a true one.
+        function generateFalseStatement(trueStatement) {
+            // Find common linking verbs/keywords and replace them with their opposite or a false equivalent
+            const replacements = {
+                'is the largest': 'is one of the smallest',
+                'is a': 'is not a',
+                'includes': 'excludes',
+                'are also similar to': 'are very different from',
+                'fourth planet': 'third planet',
+                'second smallest': 'largest',
+                'its reddish appearance': 'its greenish appearance',
+                'caused by iron oxide': 'caused by methane gas'
+            };
+
+            let falseStatement = trueStatement;
+            let replaced = false;
+
+            for (const key in replacements) {
+                if (trueStatement.includes(key)) {
+                    falseStatement = trueStatement.replace(key, replacements[key]);
+                    replaced = true;
+                    break;
+                }
+            }
+
+            // Fallback: If no replacement found, just modify the subject slightly.
+            if (!replaced) {
+                return falseStatement.replace('Mars', 'Jupiter');
+            }
+            return falseStatement;
+        }
+
+        async function generateQuiz() {
+            if (isProcessing || summarizationPipeline === null) return;
+
+            const context = contextInput.value.trim();
+            if (context.length < 50) {
+                showNotification('Please enter a longer passage (at least 50 characters) to generate facts.', 'red');
+                return;
+            }
+
+            // Set UI to processing state (button spinner active)
+            setUIState(true);
+            quizQuestions.innerHTML = '';
+            quizOutput.classList.add('hidden');
+
+            try {
+                // 1. Generate Summary/Facts using the ML model
+                const summary = await summarizationPipeline(context, {
+                    min_length: 50,
+                    max_length: 200, 
+                });
+
+                const summaryText = summary[0].summary_text;
+                
+                // 2. Parse the summary into individual facts (sentences)
+                const facts = summaryText.match(/[^.!?]+[.!?]/g) || [summaryText];
+                
+                // Remove empty or very short facts
+                const usableFacts = facts.filter(fact => fact.trim().length > 15).slice(0, 5); // Limit to 5 facts
+
+                if (usableFacts.length < 1) {
+                    showNotification('Model could not extract clear facts. Try a different passage.', 'red');
+                    return;
+                }
+
+                // 3. Create Quiz Items (interleaving True and False questions)
+                let quizHTML = '';
+                for (let i = 0; i < usableFacts.length; i++) {
+                    const fact = usableFacts[i].trim();
+                    
+                    // Every even index (0, 2, 4...) is True, odd (1, 3...) is False
+                    const isTrue = i % 2 === 0; 
+                    
+                    quizHTML += createQuizItem(i + 1, fact, isTrue);
+                }
+
+                // 4. Render the Quiz
+                quizQuestions.innerHTML = quizHTML;
+                quizOutput.classList.remove('hidden');
+                showNotification(`Quiz generated successfully from ${usableFacts.length} facts!`, 'green');
+
+            } catch (error) {
+                console.error("An error occurred during quiz generation:", error);
+                showNotification(`A processing error occurred. Check the console.`, 'red');
+            } finally {
+                // Reset UI state after processing is complete
+                setUIState(false);
+            }
+        }
     </script>
-    
-    <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-        textarea { width: 100%; height: 100px; padding: 10px; margin-bottom: 10px; box-sizing: border-box; }
-        button { background-color: #4CAF50; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
-        #output { margin-top: 20px; padding: 15px; border: 1px solid #ddd; background-color: #f9f9f9; border-radius: 5px; }
-    </style>
-</head>
-<body>
-    <h1>Sentiment Analysis in the Browser</h1>
-    <p>The AI model runs directly on your device using WebAssembly/WebGPU.</p>
-    
-    <label for="inputText">Enter Text:</label>
-    <textarea id="inputText">Transformers.js makes AI inference incredibly simple and fast!</textarea>
 
-    <button id="analyzeButton" onclick="analyzeSentiment()" disabled>Analyze Sentiment</button>
-
-    <div id="output">
-        <h4>Initializing...</h4>
-    </div>
 </body>
 </html>
