@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transformers.js CDN Quiz Generator</title>
+    <title>Transformers.js CDN Quiz Generator (CPU Fix)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -16,9 +16,8 @@
     </style>
     
     <script type="module">
-        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers';
+        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.0';
         window.pipeline = pipeline;
-        // The model name is used here; the pipeline will fetch files from the CDN.
         window.MODEL_NAME = 'Xenova/distilbart-cnn-6-6'; 
     </script>
 </head>
@@ -26,7 +25,7 @@
 
     <div class="w-full max-w-4xl">
         <h1 class="text-4xl font-extrabold text-gray-900 mb-2 text-center">In-Browser Quiz Generator</h1>
-        <p class="text-center text-gray-600 mb-8">Model assets are loading from a **CDN** on first run.</p>
+        <p class="text-center text-gray-600 mb-8">Model assets are loading from a **CDN** (approx. 300MB download).</p>
     </div>
 
     <div class="w-full max-w-4xl bg-white p-6 md:p-10 rounded-xl card mb-8">
@@ -51,7 +50,7 @@
     <div id="model-loading" class="w-full max-w-4xl bg-yellow-50 p-6 md:p-10 rounded-xl card flex flex-col items-center justify-center text-center">
         <div class="loader w-12 h-12 border-8 border-yellow-200 rounded-full mb-4"></div>
         <p class="text-xl font-semibold text-yellow-800">Initializing AI Model...</p>
-        <p class="text-sm text-yellow-700 mt-2">This is the **first load** and requires downloading the model weights (approx 300MB) from the CDN. Time depends on your network speed.</p>
+        <p class="text-sm text-yellow-700 mt-2">This is the **first load** and requires downloading the model weights (approx 300MB). Time depends on your network speed.</p>
     </div>
 
 
@@ -69,26 +68,28 @@
         let summarizationPipeline = null;
         let isProcessing = true; 
 
-        // Function to initialize the model (runs only once)
         async function initializeModel() {
             try {
                 modelLoadingIndicator.classList.remove('hidden');
                 
-                // --- CRITICAL CHANGE: Loading from the CDN using the model name ---
+                // --- CRITICAL FIX: Adding device: 'cpu' ---
+                // This ensures the model uses the WebAssembly backend, avoiding the 'Can't create a session' error 
+                // caused by hardware acceleration issues.
                 summarizationPipeline = await pipeline(
                     'summarization', 
-                    window.MODEL_NAME // <-- Uses the external CDN path
+                    window.MODEL_NAME, 
+                    { device: 'cpu' } // <-- Forces CPU execution!
                 );
                 
-                console.log("Model initialized successfully from CDN.");
+                console.log("Model initialized successfully from CDN (CPU backend).");
                 isProcessing = false;
                 modelLoadingIndicator.classList.add('hidden');
                 setUIState(false);
                 
             } catch (error) {
                 console.error("Failed to load model:", error);
-                // Prompt user to check setup instructions if load fails
-                showNotification(`CRITICAL ERROR: Failed to load model. Ensure you are running this file via a local web server (http://localhost). Check console (F12).`, 'red');
+                // The error message is now more helpful:
+                showNotification(`CRITICAL ERROR: Failed to load model. This is likely due to the massive file size (~300MB) timing out. Please check your console (F12) for network errors.`, 'red');
                 isProcessing = false;
                 modelLoadingIndicator.classList.add('hidden');
                 setUIState(false);
@@ -246,4 +247,3 @@
 
 </body>
 </html>
-
