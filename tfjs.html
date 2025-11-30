@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>T5-Small Quiz Generator (CDN)</title>
+    <title>T5-Small Local Quiz Generator</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -18,15 +18,15 @@
     <script type="module">
         import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.0';
         window.pipeline = pipeline;
-        // --- Small Model Name ---
-        window.MODEL_NAME = 'Xenova/t5-small'; 
+        // --- Local Model Path ---
+        window.LOCAL_MODEL_PATH = './models/t5-small'; 
     </script>
 </head>
 <body class="p-4 md:p-8 min-h-screen flex flex-col items-center">
 
     <div class="w-full max-w-4xl">
         <h1 class="text-4xl font-extrabold text-gray-900 mb-2 text-center">In-Browser Quiz Generator</h1>
-        <p class="text-center text-gray-600 mb-8">Model: **T5-Small** (approx. 60MB), loading from CDN.</p>
+        <p class="text-center text-gray-600 mb-8">Model: **T5-Small** ($\sim$60MB), loaded locally for maximum reliability.</p>
     </div>
 
     <div class="w-full max-w-4xl bg-white p-6 md:p-10 rounded-xl card mb-8">
@@ -51,7 +51,7 @@
     <div id="model-loading" class="w-full max-w-4xl bg-yellow-50 p-6 md:p-10 rounded-xl card flex flex-col items-center justify-center text-center">
         <div class="loader w-12 h-12 border-8 border-yellow-200 rounded-full mb-4"></div>
         <p class="text-xl font-semibold text-yellow-800">Initializing AI Model...</p>
-        <p class="text-sm text-yellow-700 mt-2">The small model is downloading (~60MB). This should be much faster!</p>
+        <p class="text-sm text-yellow-700 mt-2">Loading model files from local repository. This should be fast!</p>
     </div>
 
 
@@ -73,10 +73,10 @@
             try {
                 modelLoadingIndicator.classList.remove('hidden');
                 
-                // --- T5-Small pipeline call with CPU/WASM compatibility fixes ---
+                // --- Using LOCAL_MODEL_PATH and Compatibility Fixes ---
                 summarizationPipeline = await pipeline(
                     'summarization', 
-                    window.MODEL_NAME, 
+                    window.LOCAL_MODEL_PATH, // <-- Uses the local path /models/t5-small
                     { 
                         device: 'cpu', 
                         sessionOptions: {
@@ -86,14 +86,15 @@
                     } 
                 );
                 
-                console.log("Model initialized successfully (T5-Small).");
+                console.log("Model initialized successfully from local assets.");
                 isProcessing = false;
                 modelLoadingIndicator.classList.add('hidden');
                 setUIState(false);
                 
             } catch (error) {
                 console.error("Failed to load model:", error);
-                showNotification(`CRITICAL ERROR: Failed to load model. Check your console (F12) for network errors.`, 'red');
+                // Prompt user to check setup instructions if load fails
+                showNotification(`CRITICAL ERROR: Failed to load model. Did you set up the '/models/t5-small' folder correctly? Check console (F12).`, 'red');
                 isProcessing = false;
                 modelLoadingIndicator.classList.add('hidden');
                 setUIState(false);
@@ -213,10 +214,14 @@
 
             try {
                 // 1. Generate Summary/Facts using the ML model
-                // The T5 model requires the 'summarize:' prefix for summarization tasks
+                // T5 model requires the 'summarize:' prefix
                 const summary = await summarizationPipeline(`summarize: ${context}`, {
                     min_length: 50,
                     max_length: 200, 
+                    // --- FIX: Added for Diversity ---
+                    do_sample: true,          // Enables random sampling
+                    repetition_penalty: 2.0,  // Strongly discourages repeating phrases/tokens
+                    // --------------------------------
                 });
 
                 const summaryText = summary[0].summary_text;
