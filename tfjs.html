@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transformers.js Quiz Generator</title>
-    <!-- Load Tailwind CSS for modern styling -->
+    <title>Transformers.js Local Quiz Generator</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Custom styles for better aesthetics */
@@ -14,22 +14,23 @@
         @-webkit-keyframes spin { 0% { -webkit-transform: rotate(0deg); } 100% { -webkit-transform: rotate(360deg); } }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
-    <!-- Load the transformers.js library from Xenova CDN -->
+    
     <script type="module">
         import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.0';
         window.pipeline = pipeline;
+        window.LOCAL_MODEL_PATH = './models/distilbart'; // <-- Define the local path here
     </script>
 </head>
 <body class="p-4 md:p-8 min-h-screen flex flex-col items-center">
 
     <div class="w-full max-w-4xl">
         <h1 class="text-4xl font-extrabold text-gray-900 mb-2 text-center">In-Browser Quiz Generator</h1>
-        <p class="text-center text-gray-600 mb-8">Uses `transformers.js` to summarize text and create a True/False quiz from key facts.</p>
+        <p class="text-center text-gray-600 mb-8">Model assets are loaded locally from the repository.</p>
     </div>
 
     <div class="w-full max-w-4xl bg-white p-6 md:p-10 rounded-xl card mb-8">
         <label for="context-input" class="block text-lg font-semibold text-gray-700 mb-3">1. Enter Passage (Context):</label>
-        <textarea id="context-input" rows="8" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150" placeholder="Paste a Wikipedia article, a chapter summary, or any educational text here. The AI will extract the facts."></textarea>
+        <textarea id="context-input" rows="8" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150" placeholder="Paste a Wikipedia article, a chapter summary, or any educational text here."></textarea>
 
         <div class="flex justify-end mt-6">
             <button id="generate-button" class="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300 active:bg-blue-800 flex items-center disabled:opacity-50" onclick="generateQuiz()">
@@ -43,15 +44,13 @@
     <div id="quiz-output" class="w-full max-w-4xl bg-white p-6 md:p-10 rounded-xl card hidden">
         <h2 class="text-3xl font-bold text-gray-900 mb-6 border-b pb-2">2. Generated Quiz (True/False)</h2>
         <div id="quiz-questions">
-            <!-- Quiz items will be inserted here -->
-        </div>
+            </div>
     </div>
 
-    <!-- Initial Loading State for the Model -->
     <div id="model-loading" class="w-full max-w-4xl bg-yellow-50 p-6 md:p-10 rounded-xl card flex flex-col items-center justify-center text-center">
         <div class="loader w-12 h-12 border-8 border-yellow-200 rounded-full mb-4"></div>
         <p class="text-xl font-semibold text-yellow-800">Initializing AI Model...</p>
-        <p class="text-sm text-yellow-700 mt-2">This may take a moment on the first load as the required files are downloaded (approx 50MB).</p>
+        <p class="text-sm text-yellow-700 mt-2">The model files are loading locally. This may take a few seconds on first run due to **WebAssembly compilation**.</p>
     </div>
 
 
@@ -62,41 +61,39 @@
         const loader = document.getElementById('loader');
         const quizOutput = document.getElementById('quiz-output');
         const quizQuestions = document.getElementById('quiz-questions');
-        const modelLoadingIndicator = document.getElementById('model-loading'); // New element reference
+        const modelLoadingIndicator = document.getElementById('model-loading'); 
 
-        // Initial text for a runnable demo
-        contextInput.value = `The planet Mars is often called the Red Planet because of its reddish appearance, which is caused by iron oxide, or rust, on its surface. It is the fourth planet from the Sun and the second smallest in the Solar System after Mercury. Mars is a terrestrial planet with a thin atmosphere. Its notable features include Olympus Mons, the largest volcano and highest known mountain in the Solar System, and Valles Marineris, one of the largest canyon systems. The rotation period and seasonal cycles of Mars are also similar to those of Earth, which has led to intense study regarding its potential to harbor past or present life.`;
+        contextInput.value = `The planet Mars is often called the Red Planet because of its reddish appearance, which is caused by iron oxide, or rust, on its surface. It is the fourth planet from the Sun and the second smallest in the Solar System after Mercury. Mars is a terrestrial planet with a thin atmosphere. Its notable features include Olympus Mons, the largest volcano and highest known mountain in the Solar System, and Valles Marineris, one of the largest canyon systems.`;
 
         let summarizationPipeline = null;
-        let isProcessing = true; // Start in processing/loading state
+        let isProcessing = true; 
 
         // Function to initialize the model (runs only once)
         async function initializeModel() {
             try {
-                // Show loading indicator
                 modelLoadingIndicator.classList.remove('hidden');
                 
-                // Load a summarization model. 
+                // --- CRITICAL CHANGE: Loading from the local path ---
                 summarizationPipeline = await pipeline(
                     'summarization', 
-                    'Xenova/distilbart-cnn-6-6'
+                    window.LOCAL_MODEL_PATH // <-- Uses the local path defined in the script tag
                 );
                 
-                console.log("Model initialized successfully.");
+                console.log("Model initialized successfully from local assets.");
                 isProcessing = false;
-                modelLoadingIndicator.classList.add('hidden'); // Hide loading indicator
-                setUIState(false); // Enable the button
+                modelLoadingIndicator.classList.add('hidden');
+                setUIState(false);
                 
             } catch (error) {
                 console.error("Failed to load model:", error);
-                showNotification(`Error: Could not load the model. Check your console for details.`, 'red');
+                // Prompt user to check setup instructions if load fails
+                showNotification(`CRITICAL ERROR: Failed to load model. Did you set up the '/models/distilbart' folder correctly? Check console (F12).`, 'red');
                 isProcessing = false;
                 modelLoadingIndicator.classList.add('hidden');
                 setUIState(false);
             }
         }
 
-        // Debounced initialization to avoid multiple loads if button is clicked quickly
         const debouncedInitialize = (function() {
             let timeout;
             return function(func, delay) {
@@ -105,9 +102,7 @@
             };
         })();
 
-        // Start initialization on window load (with a slight delay)
         window.onload = () => {
-             // Set the initial state while waiting for the model
              setUIState(true); 
              debouncedInitialize(initializeModel, 100);
         };
@@ -115,22 +110,18 @@
 
         function setUIState(processing) {
             isProcessing = processing;
-            
-            // Only enable the button if the model is loaded AND we are not processing a query
             const canGenerate = summarizationPipeline !== null && !processing; 
 
             generateButton.disabled = !canGenerate || !contextInput.value.trim();
             loader.classList.toggle('hidden', !processing);
             buttonText.textContent = processing ? (summarizationPipeline ? 'Analyzing...' : 'Loading...') : 'Generate Quiz';
             
-            // Style changes for clarity
             generateButton.classList.toggle('bg-blue-600', canGenerate);
             generateButton.classList.toggle('bg-gray-500', !canGenerate);
             generateButton.classList.toggle('hover:bg-blue-700', canGenerate);
         }
 
         function showNotification(message, color) {
-            // Simple display of a message instead of alert()
             const notification = document.createElement('div');
             notification.className = `p-4 mb-4 text-sm rounded-xl text-white font-medium shadow-md ${color === 'red' ? 'bg-red-500' : 'bg-green-500'}`;
             notification.textContent = message;
@@ -146,7 +137,7 @@
         function createQuizItem(index, statement, isTrue) {
             const statementHtml = isTrue 
                 ? statement 
-                : generateFalseStatement(statement); // Simple reversal for 'False'
+                : generateFalseStatement(statement); 
 
             return `
                 <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
@@ -172,9 +163,7 @@
             `;
         }
 
-        // Simple heuristic to create a false statement from a true one.
         function generateFalseStatement(trueStatement) {
-            // Find common linking verbs/keywords and replace them with their opposite or a false equivalent
             const replacements = {
                 'is the largest': 'is one of the smallest',
                 'is a': 'is not a',
@@ -197,7 +186,6 @@
                 }
             }
 
-            // Fallback: If no replacement found, just modify the subject slightly.
             if (!replaced) {
                 return falseStatement.replace('Mars', 'Jupiter');
             }
@@ -213,7 +201,6 @@
                 return;
             }
 
-            // Set UI to processing state (button spinner active)
             setUIState(true);
             quizQuestions.innerHTML = '';
             quizOutput.classList.add('hidden');
@@ -226,30 +213,23 @@
                 });
 
                 const summaryText = summary[0].summary_text;
-                
-                // 2. Parse the summary into individual facts (sentences)
                 const facts = summaryText.match(/[^.!?]+[.!?]/g) || [summaryText];
-                
-                // Remove empty or very short facts
-                const usableFacts = facts.filter(fact => fact.trim().length > 15).slice(0, 5); // Limit to 5 facts
+                const usableFacts = facts.filter(fact => fact.trim().length > 15).slice(0, 5); 
 
                 if (usableFacts.length < 1) {
                     showNotification('Model could not extract clear facts. Try a different passage.', 'red');
                     return;
                 }
 
-                // 3. Create Quiz Items (interleaving True and False questions)
+                // 2. Create Quiz Items (interleaving True and False questions)
                 let quizHTML = '';
                 for (let i = 0; i < usableFacts.length; i++) {
                     const fact = usableFacts[i].trim();
-                    
-                    // Every even index (0, 2, 4...) is True, odd (1, 3...) is False
                     const isTrue = i % 2 === 0; 
-                    
                     quizHTML += createQuizItem(i + 1, fact, isTrue);
                 }
 
-                // 4. Render the Quiz
+                // 3. Render the Quiz
                 quizQuestions.innerHTML = quizHTML;
                 quizOutput.classList.remove('hidden');
                 showNotification(`Quiz generated successfully from ${usableFacts.length} facts!`, 'green');
@@ -258,7 +238,6 @@
                 console.error("An error occurred during quiz generation:", error);
                 showNotification(`A processing error occurred. Check the console.`, 'red');
             } finally {
-                // Reset UI state after processing is complete
                 setUIState(false);
             }
         }
