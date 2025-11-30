@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transformers.js CDN Quiz Generator (CPU Fix)</title>
+    <title>Transformers.js CDN Quiz Generator (WASM Fix)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -72,16 +72,20 @@
             try {
                 modelLoadingIndicator.classList.remove('hidden');
                 
-                // --- CRITICAL FIX: Adding device: 'cpu' ---
-                // This ensures the model uses the WebAssembly backend, avoiding the 'Can't create a session' error 
-                // caused by hardware acceleration issues.
+                // --- CRITICAL FIX: Adding device: 'cpu' AND simplified sessionOptions ---
                 summarizationPipeline = await pipeline(
                     'summarization', 
                     window.MODEL_NAME, 
-                    { device: 'cpu' } // <-- Forces CPU execution!
+                    { 
+                        device: 'cpu', 
+                        sessionOptions: {
+                            executionProviders: ['wasm'], // Force WebAssembly (CPU)
+                            graphOptimizationLevel: 'all', // Simplify optimization process
+                        }
+                    } 
                 );
                 
-                console.log("Model initialized successfully from CDN (CPU backend).");
+                console.log("Model initialized successfully from CDN (WASM backend).");
                 isProcessing = false;
                 modelLoadingIndicator.classList.add('hidden');
                 setUIState(false);
@@ -89,7 +93,7 @@
             } catch (error) {
                 console.error("Failed to load model:", error);
                 // The error message is now more helpful:
-                showNotification(`CRITICAL ERROR: Failed to load model. This is likely due to the massive file size (~300MB) timing out. Please check your console (F12) for network errors.`, 'red');
+                showNotification(`CRITICAL ERROR: Failed to load model. This is likely due to the massive file size (~300MB) timing out or a hardware/browser conflict. Check your console (F12) for network errors.`, 'red');
                 isProcessing = false;
                 modelLoadingIndicator.classList.add('hidden');
                 setUIState(false);
