@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wonderz Learn AI - OCR Pro</title>
+    <script src="https://js.puter.com/v2/"></script>
+    <script src="https://unpkg.com/tesseract.js@5.0.3/dist/tesseract.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container" id="inputSection">
+        <header>
+            <h2>Wonderz Learn AI</h2>
+            <p id="statusLabel">Tap the box to upload an image</p>
+        </header>
+
+        <!-- Preprocessing & Preview Area -->
+        <div class="preview-box" onclick="document.getElementById('imageInput').click()">
+            <div id="scanLine" class="scan-line"></div>
+            <span id="placeholderText">📸 <br> Click to Select Image</span>
+            <img id="uiPreview">
+            <input type="file" id="imageInput" accept="image/*" hidden onchange="handleFile(event)">
+        </div>
+
+        <div class="card">
+            <textarea id="quizDescription" placeholder="Optional: Add subject or specific NECTA instructions..."></textarea>
+        </div>
+
+        <div class="action-grid">
+            <button class="btn-primary" id="btnSummarize" onclick="startAI('summarize')">Summarize Notes</button>
+            <button class="btn-primary" id="btnGenerateAnswer" onclick="startAI('solve')">Solve Exam</button>
+            <button class="btn-accent" id="btnGenerateQuiz" onclick="startAI('necta')">Generate NECTA Exam</button>
+        </div>
+        
+        <div id="status" class="status-text"></div>
+    </div>
+
+    <!-- Result View -->
+    <div id="resultSection" class="hidden">
+        <div class="result-header">
+            <button class="btn-secondary" onclick="resetUI()">Back</button>
+            <button class="btn-success" onclick="window.print()">Export PDF</button>
+        </div>
+        <div id="loader" class="hidden">
+            <div class="spinner"></div>
+            <p id="loaderText">Processing...</p>
+        </div>
+        <div id="webViewOutput" class="content-output"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
