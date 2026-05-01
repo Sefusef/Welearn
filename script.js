@@ -134,3 +134,15 @@ function resetUI() {
     document.getElementById('resultSection').classList.add('hidden');
     document.getElementById('inputSection').classList.remove('hidden');
 }
+// Add this to the bottom of your script.js
+setInterval(() => {
+    if (puter.auth.isSignedIn()) {
+        // If we were stuck on a loader or blank screen, 
+        // this forces the UI to show the exam generator
+        const loader = document.getElementById('loader');
+        if (loader && !loader.classList.contains('hidden')) {
+            console.log("Login detected! Starting AI...");
+            // Trigger your AI function here if needed
+        }
+    }
+}, 2000); // Check every 2 seconds
