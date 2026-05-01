@@ -75,6 +75,7 @@
 <script>
     let processedImageData = null;
 
+    // 1. Process image immediately on upload
     async function handleFile(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -113,16 +114,28 @@
         });
     }
 
+    // 2. Main AI Engine
     async function startAI(mode) {
         if (!processedImageData) return alert("Upload an image first!");
 
-        const statusLabel = document.getElementById('statusLabel');
+        // Auth Check
+        if (!puter.auth.isSignedIn()) {
+            document.getElementById('statusLabel').innerText = "Redirecting to Sign In...";
+            try {
+                await puter.auth.signIn();
+                return startAI(mode);
+            } catch (err) {
+                alert("Sign-in required to use Llama AI.");
+                return;
+            }
+        }
+
         const status = document.getElementById('status');
         const scanLine = document.getElementById('scanLine');
         const loader = document.getElementById('loader');
         const output = document.getElementById('webViewOutput');
         
-        // UI Transition
+        // UI Setup
         document.getElementById('inputSection').classList.add('hidden');
         document.getElementById('resultSection').classList.remove('hidden');
         scanLine.style.display = "block";
@@ -134,37 +147,32 @@
             // OCR STEP
             const ocrResult = await Tesseract.recognize(processedImageData, 'eng');
             const ocrText = ocrResult.data.text;
-            const description = document.getElementById('quizDescription').value;
-
-            // CHECK FOR ANDROID HANDOFF
-            if (window.AndroidPrint && window.AndroidPrint.openAIInChrome) {
-                status.innerText = "Handoff to Chrome...";
-                window.AndroidPrint.openAIInChrome(mode, description, ocrText);
-                return; // Stop here if we are opening Chrome
-            }
-
-            // LOCAL PROCESSING (Fallback/Desktop)
-            status.innerText = "Step 2/2: Llama AI is thinking...";
             
+            status.innerText = "Step 2/2: Llama AI is thinking...";
+
+            // PROMPT LOGIC
+            const userDetails = document.getElementById('quizDescription').value;
             let systemRole = "You are an expert academic tutor. Always respond in clean HTML format (using h3, p, table, etc.). No Markdown. No CSS.";
             let finalPrompt = "";
 
             if (mode === 'solve') {
-                finalPrompt = `Analyze this exam text: "${ocrText}". Context: ${description}. Solve every question step-by-step.`;
+                finalPrompt = `Analyze this exam text: "${ocrText}". Context: ${userDetails}. Solve every question step-by-step.`;
             } else if (mode === 'summarize') {
-                finalPrompt = `Summarize the following content into clear study notes: "${ocrText}". Context: ${description}.`;
+                finalPrompt = `Summarize the following content into clear study notes: "${ocrText}". Context: ${userDetails}.`;
             } else if (mode === 'necta') {
-                finalPrompt = `NECTA Senior Examiner Mode. Subject: ${description}. Context from Image: ${ocrText}. Task: Create a formal NECTA-style exam based on the image content. Include Section A (MCQ), Section B (Short Answer), and Section C (Analysis). Include a Marking Scheme at the end.`;
+                finalPrompt = `NECTA Senior Examiner Mode. Subject: ${userDetails}. Context from Image: ${ocrText}. Task: Create a formal NECTA-style exam based on the image content. Include Section A (MCQ), Section B (Short Answer), and Section C (Analysis). Include a Marking Scheme at the end.`;
             }
 
+            // AI CHAT STEP (Llama Specific)
             const response = await puter.ai.chat(
                 [
                     { role: "system", content: systemRole },
                     { role: "user", content: finalPrompt }
                 ],
-                { model: 'meta-llama/llama-4-maverick' }
+                { model: 'meta-llama/llama-4-maverick' } // Using your specified Llama model
             );
             
+            // Render Output via .message.content
             if (response && response.message && response.message.content) {
                 output.innerHTML = response.message.content;
                 document.getElementById('finishStatus').innerText = "Analysis Complete";
