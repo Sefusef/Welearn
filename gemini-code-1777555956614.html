@@ -116,19 +116,29 @@
 
     // 2. Main AI Engine
     async function startAI(mode) {
-        if (!processedImageData) return alert("Upload an image first!");
+    if (!processedImageData) return alert("Upload an image first!");
 
-        // Auth Check
-        if (!puter.auth.isSignedIn()) {
-            document.getElementById('statusLabel').innerText = "Redirecting to Sign In...";
-            try {
-                await puter.auth.signIn();
-                return startAI(mode);
-            } catch (err) {
-                alert("Sign-in required to use Llama AI.");
-                return;
-            }
+    const statusLabel = document.getElementById('statusLabel');
+    statusLabel.innerText = "Extracting text for Chrome...";
+
+    try {
+        // Step 1: Still do OCR inside the app to save data/bandwidth
+        const ocrResult = await Tesseract.recognize(processedImageData, 'eng');
+        const ocrText = ocrResult.data.text;
+        const description = document.getElementById('quizDescription').value;
+
+        // Step 2: Check if running inside Android and hand off to Chrome
+        if (window.AndroidPrint && window.AndroidPrint.openAIInChrome) {
+            window.AndroidPrint.openAIInChrome(mode, description, ocrText);
+            statusLabel.innerText = "Opening Chrome for AI processing...";
+        } else {
+            // Fallback for testing in a regular desktop browser
+            alert("This feature requires the School Management App.");
         }
+    } catch (e) {
+        statusLabel.innerText = "Error: " + e.message;
+    }
+}
 
         const status = document.getElementById('status');
         const scanLine = document.getElementById('scanLine');
