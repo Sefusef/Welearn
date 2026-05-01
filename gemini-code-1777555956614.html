@@ -3,115 +3,204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Exam Assistant</title>
+    <title>AI Exam Engine v2.0 - Llama Edition</title>
     <!-- Dependencies -->
     <script src="https://js.puter.com/v2/"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     
     <style>
-        :root {
-            --primary: #4a90e2;
-            --accent: #00f2fe;
-            --bg: #f4f7f9;
-            --card: #ffffff;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 800px;
-            background: var(--card);
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-
+        :root { --primary: #4a90e2; --accent: #00f2fe; --bg: #0f0f0f; --card: #1a1a1a; --text: #e0e0e0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .container { width: 100%; max-width: 800px; background: var(--card); padding: 2rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         .hidden { display: none !important; }
+        .preview-container { position: relative; width: 100%; min-height: 200px; border: 2px dashed #444; border-radius: 10px; margin: 1rem 0; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #252525; }
+        #uiPreview { max-width: 100%; display: none; z-index: 5; }
+        #scanLine { display: none; position: absolute; width: 100%; height: 4px; background: var(--accent); box-shadow: 0 0 15px var(--accent); top: 0; z-index: 10; animation: scan 2s linear infinite; }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+        .controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 1rem; }
+        button { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; background: var(--primary); color: white; }
+        button:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        button:disabled { background: #444; cursor: not-allowed; opacity: 0.7; }
+        .status-bar { margin: 10px 0; font-size: 0.9rem; color: #ffa500; text-align: center; font-style: italic; }
+        #webViewOutput { padding: 1.5rem; border-radius: 8px; margin-top: 1rem; line-height: 1.7; background: #fff; color: #000; overflow-x: auto; }
+        textarea { width: 100%; background: #252525; color: white; padding: 12px; border-radius: 8px; border: 1px solid #444; margin-bottom: 10px; box-sizing: border-box; font-size: 1rem; }
+        .loader-spin { border: 4px solid #333; border-top: 4px solid var(--accent); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
 
-        /* UI Components */
-        .preview-container {
-            position: relative;
-            width: 100%;
-            min-height: 200px;
-            border: 2px dashed #ccc;
-            border-radius: 10px;
-            margin: 1rem 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            background: #fafafa;
+<div class="container">
+    <h2 style="margin-top:0; color: var(--primary);">🎓 Llama Exam Assistant</h2>
+
+    <div id="inputSection">
+        <textarea id="quizDescription" rows="3" placeholder="Enter Subject/Context (e.g., Mathematics Grade 4, Biology)..."></textarea>
+        
+        <input type="file" id="fileInput" accept="image/*" onchange="handleFile(event)" style="display: none;">
+        <button onclick="document.getElementById('fileInput').click()" style="background: #6c757d; width: 100%; margin-bottom: 10px;">
+            📷 Step 1: Upload Exam Photo
+        </button>
+
+        <div class="preview-container">
+            <div id="scanLine"></div>
+            <p id="placeholderText" style="color: #666;">No image loaded</p>
+            <img id="uiPreview" src="#" alt="Preview">
+        </div>
+
+        <p id="statusLabel" class="status-bar">Please select a photo to begin.</p>
+
+        <div class="controls">
+            <button onclick="startAI('solve')">Solve All</button>
+            <button onclick="startAI('summarize')">Summarize</button>
+            <button onclick="startAI('necta')">NECTA Mode</button>
+        </div>
+    </div>
+
+    <div id="resultSection" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <button onclick="resetUI()" style="background: #f44336;">← Start Over</button>
+            <span id="finishStatus" style="font-weight: bold; color: var(--accent);"></span>
+        </div>
+        
+        <div id="loader" class="hidden">
+            <div class="loader-spin"></div>
+            <p id="loaderText" style="text-align: center;">Llama AI is processing...</p>
+        </div>
+
+        <div id="status" class="status-bar" style="margin-top:20px;"></div>
+        <div id="webViewOutput"></div>
+    </div>
+</div>
+
+<script>
+    let processedImageData = null;
+
+    // 1. Process image immediately on upload
+    async function handleFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        document.getElementById('statusLabel').innerText = "⚡ Enhancing image for OCR...";
+        
+        processedImageData = await preprocessImage(file);
+
+        const img = document.getElementById('uiPreview');
+        img.src = processedImageData;
+        img.style.display = "block";
+        document.getElementById('placeholderText').style.display = "none";
+        document.getElementById('statusLabel').innerText = "✅ Image processed. Choose an action below.";
+    }
+
+    function preprocessImage(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const imgObj = new Image();
+                imgObj.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const maxW = 1200; 
+                    const scale = Math.min(1, maxW / imgObj.width);
+                    canvas.width = imgObj.width * scale;
+                    canvas.height = imgObj.height * scale;
+                    
+                    ctx.filter = 'grayscale(100%) contrast(150%)';
+                    ctx.drawImage(imgObj, 0, 0, canvas.width, canvas.height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.8));
+                };
+                imgObj.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // 2. Main AI Engine
+    async function startAI(mode) {
+        if (!processedImageData) return alert("Upload an image first!");
+
+        // Auth Check
+        if (!puter.auth.isSignedIn()) {
+            document.getElementById('statusLabel').innerText = "Redirecting to Sign In...";
+            try {
+                await puter.auth.signIn();
+                return startAI(mode);
+            } catch (err) {
+                alert("Sign-in required to use Llama AI.");
+                return;
+            }
         }
 
-        #uiPreview {
-            max-width: 100%;
-            display: none;
+        const status = document.getElementById('status');
+        const scanLine = document.getElementById('scanLine');
+        const loader = document.getElementById('loader');
+        const output = document.getElementById('webViewOutput');
+        
+        // UI Setup
+        document.getElementById('inputSection').classList.add('hidden');
+        document.getElementById('resultSection').classList.remove('hidden');
+        scanLine.style.display = "block";
+        loader.classList.remove('hidden');
+        output.innerHTML = "";
+        status.innerText = "Step 1/2: Extracting text (OCR)...";
+
+        try {
+            // OCR STEP
+            const ocrResult = await Tesseract.recognize(processedImageData, 'eng');
+            const ocrText = ocrResult.data.text;
+            
+            status.innerText = "Step 2/2: Llama AI is thinking...";
+
+            // PROMPT LOGIC
+            const userDetails = document.getElementById('quizDescription').value;
+            let systemRole = "You are an expert academic tutor. Always respond in clean HTML format (using h3, p, table, etc.). No Markdown. No CSS.";
+            let finalPrompt = "";
+
+            if (mode === 'solve') {
+                finalPrompt = `Analyze this exam text: "${ocrText}". Context: ${userDetails}. Solve every question step-by-step.`;
+            } else if (mode === 'summarize') {
+                finalPrompt = `Summarize the following content into clear study notes: "${ocrText}". Context: ${userDetails}.`;
+            } else if (mode === 'necta') {
+                finalPrompt = `NECTA Senior Examiner Mode. Subject: ${userDetails}. Context from Image: ${ocrText}. Task: Create a formal NECTA-style exam based on the image content. Include Section A (MCQ), Section B (Short Answer), and Section C (Analysis). Include a Marking Scheme at the end.`;
+            }
+
+            // AI CHAT STEP (Llama Specific)
+            const response = await puter.ai.chat(
+                [
+                    { role: "system", content: systemRole },
+                    { role: "user", content: finalPrompt }
+                ],
+                { model: 'meta-llama/llama-4-maverick' } // Using your specified Llama model
+            );
+            
+            // Render Output via .message.content
+            if (response && response.message && response.message.content) {
+                output.innerHTML = response.message.content;
+                document.getElementById('finishStatus').innerText = "Analysis Complete";
+            } else {
+                throw new Error("Invalid response from Llama AI.");
+            }
+
+        } catch (error) {
+            console.error(error);
+            output.innerHTML = `<p style="color:red"><b>Error:</b> ${error.message}</p>`;
+        } finally {
+            scanLine.style.display = "none";
+            loader.classList.add('hidden');
+            status.innerText = "";
         }
+    }
 
-        /* Scan Line Animation */
-        #scanLine {
-            display: none;
-            position: absolute;
-            width: 100%;
-            height: 4px;
-            background: var(--accent);
-            box-shadow: 0 0 15px var(--accent);
-            top: 0;
-            z-index: 10;
-            animation: scan 2s linear infinite;
-        }
+    function resetUI() {
+        document.getElementById('resultSection').classList.add('hidden');
+        document.getElementById('inputSection').classList.remove('hidden');
+        document.getElementById('webViewOutput').innerHTML = "";
+        document.getElementById('finishStatus').innerText = "";
+        document.getElementById('statusLabel').innerText = "Ready for next image.";
+    }
+</script>
 
-        @keyframes scan {
-            0% { top: 0; }
-            100% { top: 100%; }
-        }
-
-        .controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            margin-top: 1rem;
-        }
-
-        button {
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
-            background: var(--primary);
-            color: white;
-        }
-
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-
-        .status-bar {
-            margin: 10px 0;
-            font-size: 0.9rem;
-            color: #666;
-            text-align: center;
-        }
-
-        #webViewOutput {
-            padding: 1rem;
-            border: 1px solid #eee;
-            border-radius: 8px;
-            line-height: 1.6;
-        }
-
-        textarea {
-            width: 100%;
-            padding: 10px;
+</body>
+</html>            padding: 10px;
             border-radius: 8px;
             border: 1px solid #ddd;
             margin-bottom: 10px;
