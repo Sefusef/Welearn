@@ -9,73 +9,146 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     
     <style>
-        :root { --primary: #4a90e2; --accent: #00f2fe; --bg: #0f0f0f; --card: #1a1a1a; --text: #e0e0e0; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 20px; margin: 0; }
-        .container { width: 100%; max-width: 800px; background: var(--card); padding: 2rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        :root {
+            --bg-color: #0f0f0f;
+            --card-bg: #1a1a1a;
+            --text-primary: #ffffff;
+            --accent: #007bff;
+            --success: #28a745;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Helvetica, sans-serif;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container { width: 100%; max-width: 600px; }
+
+        /* Preview Box with Scan Animation */
+        .preview-box {
+            width: 100%;
+            min-height: 220px;
+            background: #252525;
+            border: 2px dashed #444;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        #uiPreview { max-width: 100%; max-height: 450px; display: none; z-index: 1; }
+
+        .scan-line {
+            display: none;
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            background: var(--accent);
+            box-shadow: 0 0 15px var(--accent);
+            z-index: 5;
+            top: 0;
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+
+        .card { background: var(--card-bg); padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+
+        textarea {
+            width: 100%; height: 80px; background: #2d2d2d; border: 1px solid #444;
+            color: white; border-radius: 8px; padding: 10px; box-sizing: border-box; resize: none; margin-bottom: 15px;
+        }
+
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        button { padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); }
+
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-accent { background: #6f42c1; color: white; grid-column: span 2; }
+        .btn-secondary { background: #444; color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+
+        .status-text { text-align: center; color: #ffa500; margin-bottom: 15px; font-weight: bold; font-size: 0.9rem; }
+
         .hidden { display: none !important; }
-        .preview-container { position: relative; width: 100%; min-height: 200px; border: 2px dashed #444; border-radius: 10px; margin: 1rem 0; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #252525; }
-        #uiPreview { max-width: 100%; display: none; z-index: 5; }
-        #scanLine { display: none; position: absolute; width: 100%; height: 4px; background: var(--accent); box-shadow: 0 0 15px var(--accent); top: 0; z-index: 10; animation: scan 2s linear infinite; }
-        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
-        .controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 1rem; }
-        button { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; background: var(--primary); color: white; }
-        button:hover { filter: brightness(1.1); transform: translateY(-1px); }
-        button:disabled { background: #444; cursor: not-allowed; opacity: 0.7; }
-        .status-bar { margin: 10px 0; font-size: 0.9rem; color: #ffa500; text-align: center; font-style: italic; }
-        #webViewOutput { padding: 1.5rem; border-radius: 8px; margin-top: 1rem; line-height: 1.7; background: #fff; color: #000; overflow-x: auto; }
-        textarea { width: 100%; background: #252525; color: white; padding: 12px; border-radius: 8px; border: 1px solid #444; margin-bottom: 10px; box-sizing: border-box; font-size: 1rem; }
-        .loader-spin { border: 4px solid #333; border-top: 4px solid var(--accent); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        #webViewOutput {
+            background: white; color: black; padding: 25px; border-radius: 8px;
+            margin-top: 15px; min-height: 400px; line-height: 1.6; overflow-x: auto;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.1); border-left-color: var(--accent);
+            height: 40px; width: 40px; border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        h2 { margin-top: 0; color: var(--accent); text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="margin-top:0; color: var(--primary);">🎓 Llama Exam Assistant</h2>
+    <div class="card">
+        <h2>🎓 Llama Exam Assistant</h2>
 
-    <div id="inputSection">
-        <textarea id="quizDescription" rows="3" placeholder="Enter Subject/Context (e.g., Mathematics Grade 4, Biology)..."></textarea>
-        
-        <input type="file" id="fileInput" accept="image/*" onchange="handleFile(event)" style="display: none;">
-        <button onclick="document.getElementById('fileInput').click()" style="background: #6c757d; width: 100%; margin-bottom: 10px;">
-            📷 Step 1: Upload Exam Photo
-        </button>
+        <div id="inputSection">
+            <textarea id="quizDescription" placeholder="Enter Subject/Context (e.g., Mathematics Grade 4, Biology)..."></textarea>
+            
+            <input type="file" id="fileInput" accept="image/*" onchange="handleFile(event)" class="hidden">
+            <button onclick="document.getElementById('fileInput').click()" class="btn-secondary" style="width: 100%; margin-bottom: 15px;">
+                📷 Step 1: Upload Exam Photo
+            </button>
 
-        <div class="preview-container">
-            <div id="scanLine"></div>
-            <p id="placeholderText" style="color: #666;">No image loaded</p>
-            <img id="uiPreview" src="#" alt="Preview">
+            <div class="preview-box" onclick="document.getElementById('fileInput').click()">
+                <div id="scanLine" class="scan-line"></div>
+                <p id="placeholderText" style="color: #666;">No image loaded</p>
+                <img id="uiPreview" src="#" alt="Preview">
+            </div>
+
+            <div id="statusLabel" class="status-text">Please select a photo to begin.</div>
+
+            <div class="action-grid">
+                <button class="btn-primary" onclick="startAI('solve')">Solve All</button>
+                <button class="btn-primary" onclick="startAI('summarize')">Summarize</button>
+                <button class="btn-accent" onclick="startAI('necta')">NECTA Mode</button>
+            </div>
         </div>
 
-        <p id="statusLabel" class="status-bar">Please select a photo to begin.</p>
+        <div id="resultSection" class="hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <button class="btn-danger" onclick="resetUI()">← Start Over</button>
+                <span id="finishStatus" style="font-weight: bold; color: var(--success);"></span>
+            </div>
+            
+            <div id="loader" class="hidden">
+                <div class="spinner"></div>
+                <p id="loaderText" style="text-align: center;">Llama AI is processing...</p>
+            </div>
 
-        <div class="controls">
-            <button onclick="startAI('solve')">Solve All</button>
-            <button onclick="startAI('summarize')">Summarize</button>
-            <button onclick="startAI('necta')">NECTA Mode</button>
+            <div id="status" class="status-text"></div>
+            <div id="webViewOutput"></div>
         </div>
-    </div>
-
-    <div id="resultSection" class="hidden">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <button onclick="resetUI()" style="background: #f44336;">← Start Over</button>
-            <span id="finishStatus" style="font-weight: bold; color: var(--accent);"></span>
-        </div>
-        
-        <div id="loader" class="hidden">
-            <div class="loader-spin"></div>
-            <p id="loaderText" style="text-align: center;">Llama AI is processing...</p>
-        </div>
-
-        <div id="status" class="status-bar" style="margin-top:20px;"></div>
-        <div id="webViewOutput"></div>
     </div>
 </div>
 
 <script>
     let processedImageData = null;
 
-    // 1. Process image immediately on upload
     async function handleFile(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -88,7 +161,7 @@
         img.src = processedImageData;
         img.style.display = "block";
         document.getElementById('placeholderText').style.display = "none";
-        document.getElementById('statusLabel').innerText = "✅ Image processed. Choose an action below.";
+        document.getElementById('statusLabel').innerText = "✅ Image ready. Choose an action.";
     }
 
     function preprocessImage(file) {
@@ -114,11 +187,9 @@
         });
     }
 
-    // 2. Main AI Engine
     async function startAI(mode) {
         if (!processedImageData) return alert("Upload an image first!");
 
-        // Auth Check
         if (!puter.auth.isSignedIn()) {
             document.getElementById('statusLabel').innerText = "Redirecting to Sign In...";
             try {
@@ -135,22 +206,19 @@
         const loader = document.getElementById('loader');
         const output = document.getElementById('webViewOutput');
         
-        // UI Setup
         document.getElementById('inputSection').classList.add('hidden');
         document.getElementById('resultSection').classList.remove('hidden');
         scanLine.style.display = "block";
         loader.classList.remove('hidden');
         output.innerHTML = "";
-        status.innerText = "Step 1/2: Extracting text (OCR)...";
+        status.innerText = "Step 1/2: Extracting text...";
 
         try {
-            // OCR STEP
             const ocrResult = await Tesseract.recognize(processedImageData, 'eng');
             const ocrText = ocrResult.data.text;
             
             status.innerText = "Step 2/2: Llama AI is thinking...";
 
-            // PROMPT LOGIC
             const userDetails = document.getElementById('quizDescription').value;
             let systemRole = "You are an expert academic tutor. Always respond in clean HTML format (using h3, p, table, etc.). No Markdown. No CSS.";
             let finalPrompt = "";
@@ -163,16 +231,14 @@
                 finalPrompt = `NECTA Senior Examiner Mode. Subject: ${userDetails}. Context from Image: ${ocrText}. Task: Create a formal NECTA-style exam based on the image content. Include Section A (MCQ), Section B (Short Answer), and Section C (Analysis). Include a Marking Scheme at the end.`;
             }
 
-            // AI CHAT STEP (Llama Specific)
             const response = await puter.ai.chat(
                 [
                     { role: "system", content: systemRole },
                     { role: "user", content: finalPrompt }
                 ],
-                { model: 'meta-llama/llama-4-maverick' } // Using your specified Llama model
+                { model: 'meta-llama/llama-4-maverick' }
             );
             
-            // Render Output via .message.content
             if (response && response.message && response.message.content) {
                 output.innerHTML = response.message.content;
                 document.getElementById('finishStatus').innerText = "Analysis Complete";
