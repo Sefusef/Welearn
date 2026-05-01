@@ -43,6 +43,13 @@ async function preprocess(file) {
 async function startAI(mode) {
     if (!processedImageData) return alert("Select an image first!");
 
+    // Check if signed in first to avoid silent failures
+    if (!puter.auth.isSignedIn()) {
+        alert("Please sign in to Puter first!");
+        puter.auth.signIn();
+        return;
+    }
+
     const status = document.getElementById('status');
     const scanLine = document.getElementById('scanLine');
     const inputSection = document.getElementById('inputSection');
@@ -68,7 +75,7 @@ async function startAI(mode) {
         const userDetails = document.getElementById('quizDescription').value;
         let finalPrompt = "";
 
-        // --- BORROWED LOGIC FROM JAVA Listeners ---
+        // Logic from Java Listeners
         if (mode === 'solve') {
             finalPrompt = `SOLVE EVERY QUESTION FROM THE IMAGE(S)\n Write the answers in html only,No css <h3> for sections,<p> forquestions and question items. Context: ${result.data.text}`;
         } 
@@ -81,9 +88,11 @@ async function startAI(mode) {
 
         // Puter v2 AI Step
         const response = await puter.ai.chat(finalPrompt);
-        const text = (typeof response === 'object') ? response.message.content : response;
+        
+        // FIX FOR [object Object]: Extract text from the response object
+        const aiText = (typeof response === 'object') ? response.message.content : response;
 
-        document.getElementById('webViewOutput').innerHTML = text;
+        document.getElementById('webViewOutput').innerHTML = aiText;
 
     } catch (e) {
         status.innerText = "Error. Please try a clearer photo.";
@@ -112,6 +121,37 @@ function buildNectaMasterPrompt(userDetails, ocrText) {
         sectionC = "- Geometry (Area/Perimeter) and Data Interpretation from provided images. Question 7: i to iii, Question 8: i to ii.";
     } else if (lowInput.includes("english") || lowInput.includes("kiswahili")) {
         subjectNote = "PRIMARY LANGUAGE.";
+        sectionA = "- Question 1: Dictation/Imla/Listening skill (Multiple choice items i to v). Provide the story/sentences for the invigilator at the end.\n- Question 2: Grammar & Vocabulary (Multiple choice items i to v).\n- Question 3: Choose correct word from a box (Items i to v).\n- Question 4: Matching Column A vs B (Items i to v).";
+        sectionB = "- Question 5: Verbs in correct form (Items i to v).\n- Question 6: Comprehension passage and questions (Items i to v).";
+        sectionC = "- Functional Writing/Rearrange sentences (Items i to vi).";
+    }
+
+    // 2. CONVERTING TO HTML MASTER PROMPT
+    return `NECTA Senior Examiner Mode. Subject: ${userDetails}\n` +
+           `Constraint: ${subjectNote}\n` +
+           `Rules: HTML only (<h3>/p/table). No Markdown. No direct recall—use scenarios. No css. ` +
+           `For Section C, analyze the context to create questions and insert the exact text [MAP_PLACEHOLDER] where appropriate.\n` +
+           `Structure:\n` +
+           `A: ${sectionA}\n` +
+           `B: ${sectionB}\n` +
+           `C: ${sectionC}\n` +
+           `Add Marking Scheme in <div>. \n\n Context from Image: ${ocrText}`;
+}
+
+function resetUI() {
+    document.getElementById('resultSection').classList.add('hidden');
+    document.getElementById('inputSection').classList.remove('hidden');
+}
+
+// Keep-alive check for redirects
+setInterval(() => {
+    if (puter.auth.isSignedIn()) {
+        const loader = document.getElementById('loader');
+        if (loader && !loader.classList.contains('hidden')) {
+            console.log("Login detected!");
+        }
+    }
+}, 2000);        subjectNote = "PRIMARY LANGUAGE.";
         sectionA = "- Question 1: Dictation/Imla/Listening skill (Multiple choice items i to v). Provide the story/sentences for the invigilator at the end.\n- Question 2: Grammar & Vocabulary (Multiple choice items i to v).\n- Question 3: Choose correct word from a box (Items i to v).\n- Question 4: Matching Column A vs B (Items i to v).";
         sectionB = "- Question 5: Verbs in correct form (Items i to v).\n- Question 6: Comprehension passage and questions (Items i to v).";
         sectionC = "- Functional Writing/Rearrange sentences (Items i to vi).";
