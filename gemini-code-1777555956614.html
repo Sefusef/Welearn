@@ -1,269 +1,378 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Exam Engine v2.0 - Llama Edition</title>
-    <!-- Dependencies -->
-    <script src="https://js.puter.com/v2/"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    
-    <style>
-        :root {
-            --bg-color: #0f0f0f;
-            --card-bg: #1a1a1a;
-            --text-primary: #ffffff;
-            --accent: #007bff;
-            --success: #28a745;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wonderz Learn | AI Academic Suite</title>
+<!-- Dependencies -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<script src="https://js.puter.com/v2/"></script>
+<script src="https://unpkg.com/tesseract.js@v4.0.1/dist/tesseract.min.js"></script>
+<style>
+.hidden { display: none !important; }
+.active-screen { display: block !important; animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.loader { border-top-color: #2563eb; animation: spin 1s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            font-family: 'Segoe UI', Helvetica, sans-serif;
-            margin: 0;
-            padding: 15px;
-            display: flex;
-            justify-content: center;
-        }
+/* THE "BEST APPEARANCE" STYLING */
+.prose-output {
+font-family: 'Times New Roman', Times, serif;
+line-height: 1.6;
+color: #111;
+outline: none;
+min-height: 500px;
+}
+.prose-output:focus {
+background-color: #fffdf5;
+border: 1px dashed #2563eb;
+}
 
-        .container { width: 100%; max-width: 600px; }
+.exam-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 20px; padding-bottom: 10px; }
+.section-head { font-weight: bold; text-decoration: underline; margin-top: 25px; display: block; text-transform: uppercase; }
+.question-block { margin-bottom: 15px; padding-left: 5px; }
+table { width: 100%; border-collapse: collapse; margin: 15px 0; border: 1px solid black; }
+th, td { border: 1px solid black; padding: 8px; vertical-align: top; }
 
-        /* Preview Box with Scan Animation */
-        .preview-box {
-            width: 100%;
-            min-height: 220px;
-            background: #252525;
-            border: 2px dashed #444;
-            border-radius: 15px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            position: relative;
-            margin-bottom: 20px;
-            cursor: pointer;
-        }
+/* PRINT CONFIGURATION FOR ISO A4 */
+@page {
+size: A4;
+margin: 15mm; /* Standard A4 margins */
+}
 
-        #uiPreview { max-width: 100%; max-height: 450px; display: none; z-index: 1; }
+@media print {
+/* Hide UI elements */
+nav, .no-print, .instructions-tag, button, #home-screen, #exam-screen, #notes-screen, #solve-screen {
+display: none !important;
+}
 
-        .scan-line {
-            display: none;
-            position: absolute;
-            width: 100%;
-            height: 4px;
-            background: var(--accent);
-            box-shadow: 0 0 15px var(--accent);
-            z-index: 5;
-            top: 0;
-            animation: scan 2s linear infinite;
-        }
+/* Reset body for printing */
+body {
+background: white !important;
+margin: 0 !important;
+padding: 0 !important;
+-webkit-print-color-adjust: exact;
+}
 
-        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+/* Ensure the result container takes full A4 width */
+.container {
+max-width: 100% !important;
+width: 100% !important;
+padding: 0 !important;
+margin: 0 !important;
+box-shadow: none !important;
+border: none !important;
+}
 
-        .card { background: var(--card-bg); padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+#result-screen {
+display: block !important;
+padding: 0 !important;
+margin: 0 !important;
+}
 
-        textarea {
-            width: 100%; height: 80px; background: #2d2d2d; border: 1px solid #444;
-            color: white; border-radius: 8px; padding: 10px; box-sizing: border-box; resize: none; margin-bottom: 15px;
-        }
+.bg-white {
+border: none !important;
+box-shadow: none !important;
+}
 
-        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.prose-output {
+border: none !important;
+padding: 0 !important;
+margin: 0 !important;
+width: 100% !important;
+font-size: 12pt; /* Professional print size */
+}
+}
 
-        button { padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-        button:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); }
-
-        .btn-primary { background: var(--accent); color: white; }
-        .btn-accent { background: #6f42c1; color: white; grid-column: span 2; }
-        .btn-secondary { background: #444; color: white; }
-        .btn-success { background: var(--success); color: white; }
-        .btn-danger { background: #dc3545; color: white; }
-
-        .status-text { text-align: center; color: #ffa500; margin-bottom: 15px; font-weight: bold; font-size: 0.9rem; }
-
-        .hidden { display: none !important; }
-
-        #webViewOutput {
-            background: white; color: black; padding: 25px; border-radius: 8px;
-            margin-top: 15px; min-height: 400px; line-height: 1.6; overflow-x: auto;
-        }
-
-        .spinner {
-            border: 4px solid rgba(255,255,255,0.1); border-left-color: var(--accent);
-            height: 40px; width: 40px; border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        h2 { margin-top: 0; color: var(--accent); text-align: center; }
-    </style>
+/* Watermark logic (if needed for generated tables) */
+.special-event-active::before {
+content: attr(data-event);
+position: absolute;
+top: 50%;
+left: 40%;
+transform: translate(-50%, -50%) rotate(-45deg);
+font-size: 80px;
+font-weight: bold;
+color: rgba(0, 0, 0, 0.08);
+z-index: 0;
+pointer-events: none;
+white-space: nowrap;
+}
+</style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
 
-<div class="container">
-    <div class="card">
-        <h2>🎓 Llama Exam Assistant</h2>
+<!-- NAVIGATION -->
+<nav class="bg-blue-700 p-4 shadow-xl text-white sticky top-0 z-50">
+<div class="container mx-auto flex justify-between items-center">
+<h1 class="text-2xl font-black tracking-tighter cursor-pointer flex items-center" onclick="showScreen('home-screen')">
+<i class="fas fa-graduation-cap mr-3 text-yellow-400"></i>Teacher W
+</h1>
+<button onclick="showScreen('home-screen')" class="bg-blue-800 hover:bg-blue-600 px-5 py-2 rounded-full transition-all font-bold shadow-md">
+<i class="fas fa-home mr-2"></i>Dashboard
+</button>
+</div>
+</nav>
 
-        <div id="inputSection">
-            <textarea id="quizDescription" placeholder="Enter Subject/Context (e.g., Mathematics Grade 4, Biology)..."></textarea>
-            
-            <input type="file" id="fileInput" accept="image/*" onchange="handleFile(event)" class="hidden">
-            <button onclick="document.getElementById('fileInput').click()" class="btn-secondary" style="width: 100%; margin-bottom: 15px;">
-                📷 Step 1: Upload Exam Photo
-            </button>
+<!-- 1. HOME SCREEN -->
+<section id="home-screen" class="container mx-auto p-8 text-center mt-10 active-screen">
+<h2 class="text-4xl font-black mb-4 text-slate-800 uppercase tracking-tight">Academic AI Suite</h2>
+<p class="text-slate-500 mb-12 text-lg max-w-2xl mx-auto">Professional tools for Tanzanian Educators. Generate exams, summarize textbooks, and solve questions instantly.</p>
 
-            <div class="preview-box" onclick="document.getElementById('fileInput').click()">
-                <div id="scanLine" class="scan-line"></div>
-                <p id="placeholderText" style="color: #666;">No image loaded</p>
-                <img id="uiPreview" src="#" alt="Preview">
-            </div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+<div onclick="showScreen('exam-screen')" class="bg-white p-10 rounded-3xl shadow-sm hover:shadow-2xl transition-all border-b-8 border-blue-600 cursor-pointer group">
+<div class="w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-blue-600 transition-colors">
+<i class="fas fa-file-signature text-4xl text-blue-600 group-hover:text-white"></i>
+</div>
+<h3 class="text-2xl font-black">Exam Generator</h3>
+<p class="text-slate-500 mt-3 text-sm">Create NECTA-standard papers with automated Section A, B, and C structures.</p>
+</div>
+<div onclick="showScreen('notes-screen')" class="bg-white p-10 rounded-3xl shadow-sm hover:shadow-2xl transition-all border-b-8 border-emerald-600 cursor-pointer group">
+<div class="w-20 h-20 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-emerald-600 transition-colors">
+<i class="fas fa-book-reader text-4xl text-emerald-600 group-hover:text-white"></i>
+</div>
+<h3 class="text-2xl font-black">Note Summarizer</h3>
+<p class="text-slate-500 mt-3 text-sm">Convert textbook photos or handwritten notes into concise revision bullet points.</p>
+</div>
+<div onclick="showScreen('solve-screen')" class="bg-white p-10 rounded-3xl shadow-sm hover:shadow-2xl transition-all border-b-8 border-purple-600 cursor-pointer group">
+<div class="w-20 h-20 bg-purple-50 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-purple-600 transition-colors">
+<i class="fas fa-brain text-4xl text-purple-600 group-hover:text-white"></i>
+</div>
+<h3 class="text-2xl font-black">Smart Solver</h3>
+<p class="text-slate-500 mt-3 text-sm">Snap a photo of any exam question to get step-by-step explained solutions.</p>
+</div>
+</div>
+</section>
 
-            <div id="statusLabel" class="status-text">Please select a photo to begin.</div>
+<!-- 2. EXAM GENERATOR SCREEN -->
+<section id="exam-screen" class="hidden container mx-auto p-6 max-w-4xl">
+<div class="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+<div class="bg-blue-700 p-6 text-white font-bold text-xl uppercase tracking-widest flex items-center">
+<i class="fas fa-plus-circle mr-3"></i> Create New Examination
+</div>
+<form id="examForm" class="p-8 space-y-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+<label class="block text-xs font-black uppercase text-slate-400 mb-2">Institution/Title</label>
+<input type="text" id="examTitle" placeholder="e.g., THE UNITED REPUBLIC OF TANZANIA" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition">
+</div>
+<div>
+<label class="block text-xs font-black uppercase text-slate-400 mb-2">Subject & Level</label>
+<select id="examLevel" class="w-full border-2 p-3 rounded-xl outline-none">
+<option>Geography - Form 4</option>
+<option>ICT - Form 2</option>
+<option>Science - Standard 7</option>
+</select>
+</div>
+</div>
+<div>
+<label class="block text-xs font-black uppercase text-slate-400 mb-2">Specific Topic for Analysis</label>
+<input type="text" id="examTopic" placeholder="e.g. Map Reading, Environment, or Human Activities" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition">
+</div>
+<div class="bg-blue-50 p-6 rounded-2xl border-2 border-dashed border-blue-200 text-center">
+<label class="block font-bold text-blue-800 mb-2 italic">Upload Map or Diagram for Analysis</label>
+<input type="file" id="examImages" class="text-sm">
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+<span class="font-black text-blue-700 block mb-2 underline">Section A</span>
+<div class="flex space-x-2">
+<input type="number" id="secA_count" placeholder="Qty" class="w-20 border p-2 rounded-lg" value="10">
+<input type="text" id="secA_type" placeholder="Type (e.g. MCQs)" class="flex-1 border p-2 rounded-lg" value="MCQs">
+</div>
+</div>
+<div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+<span class="font-black text-blue-700 block mb-2 underline">Section B</span>
+<div class="flex space-x-2">
+<input type="number" id="secB_count" placeholder="Qty" class="w-20 border p-2 rounded-lg" value="5">
+<input type="text" id="secB_type" placeholder="Type (Short Ans)" class="flex-1 border p-2 rounded-lg" value="Short Answers">
+</div>
+</div>
+</div>
+<button type="button" onclick="executeAI('exam')" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl hover:bg-blue-800 transition transform hover:-translate-y-1 shadow-lg">GENERATE WITH AI</button>
+</form>
+</div>
+</section>
 
-            <div class="action-grid">
-                <button class="btn-primary" onclick="startAI('solve')">Solve All</button>
-                <button class="btn-primary" onclick="startAI('summarize')">Summarize</button>
-                <button class="btn-accent" onclick="startAI('necta')">NECTA Mode</button>
-            </div>
-        </div>
+<!-- 3. NOTES SUMMARIZER SCREEN -->
+<section id="notes-screen" class="hidden container mx-auto p-6 max-w-4xl">
+<div class="bg-white rounded-3xl shadow-2xl p-8 border border-slate-200">
+<h2 class="text-3xl font-black mb-6 text-emerald-700 uppercase"><i class="fas fa-bolt mr-3"></i>AI Note Summarizer</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+<div class="bg-emerald-50 p-6 rounded-2xl border-2 border-dashed border-emerald-200">
+<label class="block font-bold mb-2 text-emerald-800">Scan Page (Image)</label>
+<input type="file" id="noteImages" class="text-sm">
+</div>
+<div class="flex items-center justify-center p-6 bg-slate-50 rounded-2xl border border-slate-200">
+<p class="text-xs text-slate-400 font-bold uppercase italic text-center">OR PASTE TEXT MANUALLY BELOW</p>
+</div>
+</div>
+<textarea id="notesInput" placeholder="Paste textbook content or notes here..." class="w-full h-64 border-2 p-4 rounded-2xl mb-4 focus:border-emerald-500 outline-none transition shadow-inner"></textarea>
+<button onclick="executeAI('notes')" class="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl hover:bg-emerald-800 transition">GENERATE SUMMARY</button>
+</div>
+</section>
 
-        <div id="resultSection" class="hidden">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <button class="btn-danger" onclick="resetUI()">← Start Over</button>
-                <span id="finishStatus" style="font-weight: bold; color: var(--success);"></span>
-            </div>
-            
-            <div id="loader" class="hidden">
-                <div class="spinner"></div>
-                <p id="loaderText" style="text-align: center;">Llama AI is processing...</p>
-            </div>
+<!-- 4. SOLVE SCREEN -->
+<section id="solve-screen" class="hidden container mx-auto p-6 max-w-4xl">
+<div class="bg-white rounded-3xl shadow-2xl p-10 border border-slate-200 text-center">
+<h2 class="text-3xl font-black mb-6 text-purple-700 uppercase">Intelligent Solver</h2>
+<div class="p-10 border-4 border-dashed border-purple-100 rounded-3xl mb-6 bg-purple-50">
+<i class="fas fa-camera-retro text-6xl text-purple-200 mb-4"></i>
+<p class="text-slate-500 mb-4 font-bold">Upload a clear photo of the question</p>
+<input type="file" id="solveImage" class="block mx-auto text-sm">
+</div>
+<button onclick="executeAI('solve')" class="w-full bg-purple-600 text-white font-black py-4 rounded-2xl hover:bg-purple-800 transition">SOLVE NOW</button>
+</div>
+</section>
 
-            <div id="status" class="status-text"></div>
-            <div id="webViewOutput"></div>
-        </div>
-    </div>
+<!-- 5. RESULTS SCREEN -->
+<section id="result-screen" class="hidden container mx-auto p-6 max-w-5xl mb-20">
+<div class="bg-white rounded-3xl shadow-2xl p-8 border border-blue-100">
+<div class="flex flex-wrap justify-between items-center mb-6 border-b pb-4 gap-4 no-print">
+<div>
+<h2 class="text-2xl font-black text-blue-900 tracking-tight">AI GENERATED RESULT</h2>
+<p class="text-xs text-blue-500 font-bold italic instructions-tag">You can click and edit the text below before printing.</p>
+</div>
+<div class="flex space-x-3">
+<button onclick="copyResult()" class="bg-slate-100 hover:bg-slate-200 p-2 px-6 rounded-xl font-bold transition">Copy</button>
+<button onclick="window.print()" class="bg-blue-600 text-white p-2 px-6 rounded-xl font-bold hover:bg-blue-700 transition">Save/Print PDF</button>
+</div>
 </div>
 
+<div id="loaderDisplay" class="hidden flex flex-col items-center justify-center p-20">
+<div class="loader rounded-full border-4 border-t-4 border-slate-200 h-16 w-16 mb-6"></div>
+<p id="statusLabel" class="text-blue-600 font-black tracking-widest animate-pulse uppercase">Processing...</p>
+</div>
+
+<!-- EDITABLE OUTPUT CONTAINER -->
+<div id="outputBox" contenteditable="true" class="prose-output text-lg p-8 bg-white text-slate-800">
+Ready for input...
+</div>
+</div>
+</section>
+
 <script>
-    let processedImageData = null;
+function showScreen(id) {
+const screens = ['home-screen', 'exam-screen', 'notes-screen', 'solve-screen', 'result-screen'];
+screens.forEach(s => {
+const el = document.getElementById(s);
+if(el) el.classList.add('hidden');
+if(el) el.classList.remove('active-screen');
+});
+const target = document.getElementById(id);
+if(target) {
+target.classList.remove('hidden');
+target.classList.add('active-screen');
+}
+window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
-    async function handleFile(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+function preprocessImage(file) {
+return new Promise((resolve) => {
+const reader = new FileReader();
+reader.onload = (e) => {
+const imgObj = new Image();
+imgObj.onload = () => {
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d');
+const maxW = 1200;
+const scale = Math.min(1, maxW / imgObj.width);
+canvas.width = imgObj.width * scale;
+canvas.height = imgObj.height * scale;
+ctx.filter = 'grayscale(100%) contrast(150%)';
+ctx.drawImage(imgObj, 0, 0, canvas.width, canvas.height);
+resolve(canvas.toDataURL('image/jpeg', 0.8));
+};
+imgObj.src = e.target.result;
+};
+reader.readAsDataURL(file);
+});
+}
 
-        document.getElementById('statusLabel').innerText = "⚡ Enhancing image for OCR...";
-        
-        processedImageData = await preprocessImage(file);
+async function executeAI(mode) {
+const output = document.getElementById('outputBox');
+const loader = document.getElementById('loaderDisplay');
+const statusLabel = document.getElementById('statusLabel');
 
-        const img = document.getElementById('uiPreview');
-        img.src = processedImageData;
-        img.style.display = "block";
-        document.getElementById('placeholderText').style.display = "none";
-        document.getElementById('statusLabel').innerText = "✅ Image ready. Choose an action.";
-    }
+showScreen('result-screen');
+output.classList.add('hidden');
+loader.classList.remove('hidden');
 
-    function preprocessImage(file) {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const imgObj = new Image();
-                imgObj.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    const maxW = 1200; 
-                    const scale = Math.min(1, maxW / imgObj.width);
-                    canvas.width = imgObj.width * scale;
-                    canvas.height = imgObj.height * scale;
-                    
-                    ctx.filter = 'grayscale(100%) contrast(150%)';
-                    ctx.drawImage(imgObj, 0, 0, canvas.width, canvas.height);
-                    resolve(canvas.toDataURL('image/jpeg', 0.8));
-                };
-                imgObj.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
-    }
+try {
+if (!puter.auth.isSignedIn()) await puter.auth.signIn();
 
-    async function startAI(mode) {
-        if (!processedImageData) return alert("Upload an image first!");
+let ocrText = "";
+let imageData = "";
+let fileInput;
+if (mode === 'exam') fileInput = document.getElementById('examImages');
+if (mode === 'notes') fileInput = document.getElementById('noteImages');
+if (mode === 'solve') fileInput = document.getElementById('solveImage');
 
-        if (!puter.auth.isSignedIn()) {
-            document.getElementById('statusLabel').innerText = "Redirecting to Sign In...";
-            try {
-                await puter.auth.signIn();
-                return startAI(mode);
-            } catch (err) {
-                alert("Sign-in required to use Llama AI.");
-                return;
-            }
-        }
+if (fileInput && fileInput.files[0]) {
+statusLabel.innerText = "Extracting details from image...";
+imageData = await preprocessImage(fileInput.files[0]);
+const result = await Tesseract.recognize(imageData, 'eng');
+ocrText = result.data.text;
+}
 
-        const status = document.getElementById('status');
-        const scanLine = document.getElementById('scanLine');
-        const loader = document.getElementById('loader');
-        const output = document.getElementById('webViewOutput');
-        
-        document.getElementById('inputSection').classList.add('hidden');
-        document.getElementById('resultSection').classList.remove('hidden');
-        scanLine.style.display = "block";
-        loader.classList.remove('hidden');
-        output.innerHTML = "";
-        status.innerText = "Step 1/2: Extracting text...";
+statusLabel.innerText = "AI is structuring content...";
 
-        try {
-            const ocrResult = await Tesseract.recognize(processedImageData, 'eng');
-            const ocrText = ocrResult.data.text;
-            
-            status.innerText = "Step 2/2: Llama AI is thinking...";
+const topic = document.getElementById('examTopic')?.value || "General";
+const title = document.getElementById('examTitle').value || "THE UNITED REPUBLIC OF TANZANIA";
+const level = document.getElementById('examLevel').value;
 
-            const userDetails = document.getElementById('quizDescription').value;
-            let systemRole = "You are an expert academic tutor. Always respond in clean HTML format (using h3, p, table, etc.). No Markdown. No CSS.";
-            let finalPrompt = "";
+let systemRole = `You are a NECTA Examination and Lesson Note Architect.
+CRITICAL RULES:
+1. NEVER use Markdown (no asterisks **, no dashes -, no #). Provide the answers at the end of the examination.
+2. For Section Headings, ALWAYS use: <span class="section-head">SECTION A: MULTIPLE CHOICE QUESTIONS</span>.
+3. For Question numbers, use: <div class="question-block"><b>(i)</b> Question text...</div>.
+4. For MCQs, keep options on new lines: <br><b>A.</b> Option <b>B.</b> Option...
+5. Ensure the Section C, its instruction and the placeholder [IMAGE_HERE] are on separate lines for clarity.`;
+let finalPrompt = "";
+if (mode === 'exam') {
+finalPrompt = `Subject: ${level}. Institution: ${title}. Topic: ${topic}. Context: ${ocrText}. Task: Create a formal exam with Section A (Multiple Choice), Section B (Short Answers), and Section C (Analysis based on an image). In Section C, include the placeholder [IMAGE_HERE].`;
+} else if (mode === 'notes') {
+finalPrompt = `Topic: ${topic}. Content: ${ocrText || document.getElementById('notesInput').value}. Create very short summary, simple and clear teaching notes. Use <h3> for topics and <ul> for points.`;
+} else if (mode === 'solve') {
+finalPrompt = `Solve clearly: "${ocrText}". Wrap in <div class="solution-box">. Use <b>Step-by-step:</b> list. At the Top list the answers only nested in <ol> </ol> odered list tag, add the step-by-step explaination `;
+}
 
-            if (mode === 'solve') {
-                finalPrompt = `Analyze this exam text: "${ocrText}". Context: ${userDetails}. Solve every question step-by-step.`;
-            } else if (mode === 'summarize') {
-                finalPrompt = `Summarize the following content into clear study notes: "${ocrText}". Context: ${userDetails}.`;
-            } else if (mode === 'necta') {
-                finalPrompt = `NECTA Senior Examiner Mode. Subject: ${userDetails}. Context from Image: ${ocrText}. Task: Create a formal NECTA-style exam based on the image content. Include Section A (MCQ), Section B (Short Answer), and Section C (Analysis). Include a Marking Scheme at the end.`;
-            }
+const response = await puter.ai.chat(
+[{ role: "system", content: systemRole }, { role: "user", content: finalPrompt }],
+{ model: 'meta-llama/llama-3.1-70b-instruct' }
+);
 
-            const response = await puter.ai.chat(
-                [
-                    { role: "system", content: systemRole },
-                    { role: "user", content: finalPrompt }
-                ],
-                { model: 'meta-llama/llama-4-maverick' }
-            );
-            
-            if (response && response.message && response.message.content) {
-                output.innerHTML = response.message.content;
-                document.getElementById('finishStatus').innerText = "Analysis Complete";
-            } else {
-                throw new Error("Invalid response from Llama AI.");
-            }
+let aiResponse = response.message.content;
 
-        } catch (error) {
-            console.error(error);
-            output.innerHTML = `<p style="color:red"><b>Error:</b> ${error.message}</p>`;
-        } finally {
-            scanLine.style.display = "none";
-            loader.classList.add('hidden');
-            status.innerText = "";
-        }
-    }
+if (imageData && aiResponse.includes("[IMAGE_HERE]")) {
+const imgHtml = `<div class="my-6 border-2 border-black p-2 text-center" contenteditable="false">
+<p class="font-bold italic text-sm mb-2">Study the figure below carefully:</p>
+<img src="${imageData}" class="mx-auto max-h-[400px] border border-slate-300">
+</div>`;
+aiResponse = aiResponse.replace("[IMAGE_HERE]", imgHtml);
+}
 
-    function resetUI() {
-        document.getElementById('resultSection').classList.add('hidden');
-        document.getElementById('inputSection').classList.remove('hidden');
-        document.getElementById('webViewOutput').innerHTML = "";
-        document.getElementById('finishStatus').innerText = "";
-        document.getElementById('statusLabel').innerText = "Ready for next image.";
-    }
+loader.classList.add('hidden');
+output.classList.remove('hidden');
+output.innerHTML = aiResponse;
+
+} catch (error) {
+loader.classList.add('hidden');
+output.classList.remove('hidden');
+output.innerHTML = `<p style="color:red"><b>SYSTEM ERROR:</b> ${error.message}</p>`;
+}
+}
+
+function copyResult() {
+const el = document.getElementById('outputBox');
+const range = document.createRange();
+range.selectNode(el);
+window.getSelection().removeAllRanges();
+window.getSelection().addRange(range);
+document.execCommand('copy');
+alert("Copied to clipboard!");
+}
 </script>
-
 </body>
 </html>
