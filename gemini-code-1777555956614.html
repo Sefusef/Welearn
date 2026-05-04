@@ -370,7 +370,7 @@ async function executeAI(mode) {
         // Using Llama 3.1 70b as it is currently the most stable high-end model on Puter
         const response = await puter.ai.chat(
             [{ role: "system", content: systemRole }, { role: "user", content: finalPrompt }],
-            { model: 'meta-llama/llama-4-70b-instruct' }
+            { model: 'meta-llama/llama-3.1-70b-instruct' }
         );
 
         let aiResponse = response.message.content;
