@@ -314,9 +314,8 @@ async function executeAI(mode) {
         let fileInput = document.getElementById(mode === 'exam' ? 'examImages' : mode === 'notes' ? 'noteImages' : 'solveImage');
 
         if (fileInput && fileInput.files.length > 0) {
-            statusLabel.innerText = "Encoding to WebP for speed...";
+            statusLabel.innerText = "Encoding to WebP...";
             imageData = await preprocessImages(fileInput.files);
-            
             statusLabel.innerText = "Scanning text...";
             const result = await Tesseract.recognize(imageData, 'eng');
             ocrText = result.data.text;
@@ -324,40 +323,60 @@ async function executeAI(mode) {
 
         statusLabel.innerText = "W is generating content...";
 
-        const topic = document.getElementById('examTopic')?.value || "General";
+        // --- STRICT DATA CAPTURE ---
+        const topic = document.getElementById('examTopic')?.value || document.getElementById('noteTopic')?.value || "General";
         const title = document.getElementById('examTitle')?.value || "THE UNITED REPUBLIC OF TANZANIA";
-        const level = document.getElementById('examLevel')?.value || "Form";
+        const level = document.getElementById('examGrade')?.value || document.getElementById('noteLevel')?.value || "Standard";
 
-        let systemRole = `You are a NECTA Examination and Lesson Note Architect.
-CRITICAL RULES:
-1. NEVER use Markdown (no asterisks **, no dashes -, no #). Provide the answers at the end of the examination.
-2. For Section Headings, ALWAYS use: <span class="section-head">SECTION A: MULTIPLE CHOICE QUESTIONS</span>.
-3. For Question numbers, use: <div class="question-block"><b>(i)</b> Question text...</div>.
-4. For MCQs, keep options on new lines: <br><b>A.</b> Option <b>B.</b> Option...
-5. Ensure the Section C, its instruction and the placeholder [IMAGE_HERE] are on separate lines for clarity.`;
+        let systemRole = `You are a NECTA Architect. 
+        CRITICAL: You must ONLY use the provided Topic and Sub-topics. 
+        CRITICAL: You must follow the exact question counts requested. 
+        RULES: No Markdown. Use <h3>, <span class="section-head">, <ul>, <li>, and <div class="question-block">.`;
 
         let finalPrompt = "";
+
         if (mode === 'exam') {
-            finalPrompt = `Subject: ${level}. Institution: ${title}. Topic: ${topic}. Context: ${ocrText}. Task: Create a formal exam with Section A (Multiple Choice), Section B (Short Answers), and Section C (Analysis based on an image). In Section C, include the placeholder [IMAGE_HERE].`;
-        } else if (mode === 'notes') {
-            // UPDATED: Now captures Topic, Level, Sub-topics, and OCR text context
-            const noteLevel = document.getElementById('noteLevel')?.value || "General";
-            const noteSubtopics = document.getElementById('noteSubtopics')?.value || "Standard curriculum";
+            // Capture specific counts from your UI
+            const countA = document.getElementById('secA_count')?.value || 10;
+            const countB = document.getElementById('secB_count')?.value || 5;
+            const countC = document.getElementById('secC_count')?.value || 2;
             
-            finalPrompt = `Topic: ${topic}. Level: ${noteLevel}. Sub-topics to cover: ${noteSubtopics}. Reference Content: ${ocrText || ""}. Task: Create very short summary, simple and clear teaching notes. Use <h3> for topics and <ul> for points.`;
+            finalPrompt = `STRICT TOPIC: ${topic}. 
+            INSTITUTION: ${title}. 
+            LEVEL: ${level}.
+            CONTEXT FROM IMAGES: ${ocrText}.
+            
+            EXAM STRUCTURE REQUIREMENTS:
+            1. SECTION A: Generate EXACTLY ${countA} Multiple Choice Questions.
+            2. SECTION B: Generate EXACTLY ${countB} Short Answer Questions.
+            3. SECTION C: Generate EXACTLY ${countC} Analytical Questions. 
+            Include [IMAGE_HERE] in Section C. 
+            Follow NECTA standards.`;
+
+        } else if (mode === 'notes') {
+            const subtopics = document.getElementById('noteSubtopics')?.value || "";
+            
+            finalPrompt = `STRICT TOPIC: ${topic}.
+            LEVEL: ${level}.
+            STRICT SUB-TOPICS TO COVER: ${subtopics}.
+            OCR REFERENCE: ${ocrText}.
+            
+            INSTRUCTIONS: Create notes ONLY for the topic and sub-topics listed above. Do not add outside topics. Use <h3> for headings and <ul> for points. Keep it simple for Tanzanian students.`;
+
         } else if (mode === 'solve') {
-            finalPrompt = `Solve clearly: "${ocrText}". Wrap in <div class="solution-box">. Use <b>Step-by-step:</b> list. At the Top list the answers only nested in <ol> </ol> odered list tag, add the step-by-step explaination `;
+            finalPrompt = `Solve clearly: "${ocrText}". Wrap in <div class="solution-box">. List answers first in <ol>, then provide step-by-step explanations.`;
         }
 
+        // Using Llama 3.1 70b as it is currently the most stable high-end model on Puter
         const response = await puter.ai.chat(
             [{ role: "system", content: systemRole }, { role: "user", content: finalPrompt }],
-            { model: 'meta-llama/llama-3.1-70b-instruct' }
+            { model: 'meta-llama/llama-4-70b-instruct' }
         );
 
         let aiResponse = response.message.content;
 
         if (imageData && aiResponse.includes("[IMAGE_HERE]")) {
-            aiResponse = aiResponse.replace("[IMAGE_HERE]", `<div class="my-6 border-2 border-black p-2 text-center" contenteditable="false"><img src="${imageData}" class="mx-auto max-h-[400px]"></div>`);
+            aiResponse = aiResponse.replace("[IMAGE_HERE]", `<div class="my-6 border-2 border-black p-2 text-center"><img src="${imageData}" class="mx-auto max-h-[500px]"></div>`);
         }
 
         loader.classList.add('hidden');
@@ -366,11 +385,9 @@ CRITICAL RULES:
 
     } catch (error) {
         loader.classList.add('hidden');
-        output.classList.remove('hidden');
         output.innerHTML = `<p style="color:red"><b>ERROR:</b> ${error.message}</p>`;
     }
 }
-
 function copyResult() {
     const el = document.getElementById('outputBox');
     const range = document.createRange();
