@@ -8,7 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://js.puter.com/v2/"></script>
-    <script src="https://unpkg.com/tesseract.js@5.1.0/dist/tesseract.min.js"></script>
+    <!-- Tesseract V5 -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         .hidden { display: none !important; }
         .active-screen { display: block !important; animation: fadeIn 0.4s ease-out; }
@@ -46,7 +47,6 @@
             .prose-output { border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; font-size: 12pt; }
         }
 
-        /* Floating Chat Styles */
         #chat-widget { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
         #chat-window { 
             width: 350px; 
@@ -55,7 +55,6 @@
             flex-direction: column; 
             display: none;
         }
-        /* Custom Scrollbar for Chat */
         #chat-messages {
             flex: 1;
             overflow-y: auto;
@@ -124,12 +123,52 @@
                     <div><label class="block text-xs font-black uppercase text-slate-400 mb-2">Grade</label><input type="text" id="examGrade" placeholder="e.g. Form 2" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition"></div>
                 </div>
                 <div><label class="block text-xs font-black uppercase text-slate-400 mb-2">Topic</label><input type="text" id="examTopic" placeholder="Topic Name" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition"></div>
-                <div class="bg-blue-50 p-6 rounded-2xl border-2 border-dashed border-blue-200 text-center"><input type="file" id="examImages" multiple></div>
+                <div class="bg-blue-50 p-6 rounded-2xl border-2 border-dashed border-blue-200 text-center"><input type="file" id="examImages" multiple accept="image/*"></div>
+                
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200"><span class="font-black text-blue-700 underline">Sec A</span><input type="number" id="secA_count" value="10" class="w-full border mt-2 p-2 rounded-lg"><input type="text" id="secA_type" value="MCQs" class="w-full border mt-1 p-2 rounded-lg"></div>
-                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200"><span class="font-black text-blue-700 underline">Sec B</span><input type="number" id="secB_count" value="5" class="w-full border mt-2 p-2 rounded-lg"><input type="text" id="secB_type" value="Short Answers" class="w-full border mt-1 p-2 rounded-lg"></div>
-                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200"><span class="font-black text-blue-700 underline">Sec C</span><input type="number" id="secC_count" value="2" class="w-full border mt-2 p-2 rounded-lg"><input type="text" id="secC_type" value="Essays" class="w-full border mt-1 p-2 rounded-lg"></div>
+                    <!-- SECTION A -->
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                        <span class="font-black text-blue-700 underline">Sec A</span>
+                        <div class="mt-2">
+                            <label class="text-[10px] font-bold uppercase text-slate-400">Questions</label>
+                            <input type="number" id="secA_count" value="10" class="w-full border p-2 rounded-lg text-sm">
+                        </div>
+                        <div class="mt-2">
+                            <label class="text-[10px] font-bold uppercase text-slate-400">Items per Qn</label>
+                            <input type="number" id="secA_items" value="1" class="w-full border p-2 rounded-lg text-sm">
+                        </div>
+                        <input type="text" id="secA_type" value="MCQs" class="w-full border mt-2 p-2 rounded-lg text-sm">
+                    </div>
+
+                    <!-- SECTION B -->
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                        <span class="font-black text-blue-700 underline">Sec B</span>
+                        <div class="mt-2">
+                            <label class="text-[10px] font-bold uppercase text-slate-400">Questions</label>
+                            <input type="number" id="secB_count" value="5" class="w-full border p-2 rounded-lg text-sm">
+                        </div>
+                        <div class="mt-2">
+                            <label class="text-[10px] font-bold uppercase text-slate-400">Items per Qn</label>
+                            <input type="number" id="secB_items" value="1" class="w-full border p-2 rounded-lg text-sm">
+                        </div>
+                        <input type="text" id="secB_type" value="Short Answers" class="w-full border mt-2 p-2 rounded-lg text-sm">
+                    </div>
+
+                    <!-- SECTION C -->
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                        <span class="font-black text-blue-700 underline">Sec C</span>
+                        <div class="mt-2">
+                            <label class="text-[10px] font-bold uppercase text-slate-400">Questions</label>
+                            <input type="number" id="secC_count" value="2" class="w-full border p-2 rounded-lg text-sm">
+                        </div>
+                        <div class="mt-2">
+                            <label class="text-[10px] font-bold uppercase text-slate-400">Items per Qn</label>
+                            <input type="number" id="secC_items" value="1" class="w-full border p-2 rounded-lg text-sm">
+                        </div>
+                        <input type="text" id="secC_type" value="Essays" class="w-full border mt-2 p-2 rounded-lg text-sm">
+                    </div>
                 </div>
+
                 <button type="button" onclick="executeAI('exam')" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl hover:bg-blue-800 transition shadow-lg">GENERATE WITH W</button>
             </form>
         </div>
@@ -144,7 +183,7 @@
                 <div><label class="block text-xs font-black uppercase text-slate-400 mb-2">Class Level</label><input type="text" id="noteLevel" placeholder="e.g. Form 1" class="w-full border-2 p-3 rounded-xl outline-none focus:border-emerald-500 transition"></div>
             </div>
             <div class="mb-6"><label class="block text-xs font-black uppercase text-slate-400 mb-2">Sub-topics</label><textarea id="noteSubtopics" placeholder="Comma separated subtopics" class="w-full h-24 border-2 p-3 rounded-xl outline-none focus:border-emerald-500 transition"></textarea></div>
-            <div class="bg-emerald-50 p-6 rounded-2xl border-2 border-dashed border-emerald-200 mb-6"><input type="file" id="noteImages" multiple></div>
+            <div class="bg-emerald-50 p-6 rounded-2xl border-2 border-dashed border-emerald-200 mb-6"><input type="file" id="noteImages" multiple accept="image/*"></div>
             <button onclick="executeAI('notes')" class="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl hover:bg-emerald-800 transition">GENERATE NOTES WITH W</button>
         </div>
     </section>
@@ -153,7 +192,7 @@
     <section id="solve-screen" class="hidden container mx-auto p-6 max-w-4xl">
         <div class="bg-white rounded-3xl shadow-2xl p-10 border border-slate-200 text-center">
             <h2 class="text-3xl font-black mb-6 text-purple-700 uppercase">Intelligent Solver</h2>
-            <div class="p-10 border-4 border-dashed border-purple-100 rounded-3xl mb-6 bg-purple-50"><input type="file" id="solveImage" class="mx-auto" multiple></div>
+            <div class="p-10 border-4 border-dashed border-purple-100 rounded-3xl mb-6 bg-purple-50"><input type="file" id="solveImage" class="mx-auto" multiple accept="image/*"></div>
             <button onclick="executeAI('solve')" class="w-full bg-purple-600 text-white font-black py-4 rounded-2xl hover:bg-purple-800 transition">SOLVE WITH W</button>
         </div>
     </section>
@@ -183,12 +222,10 @@
                 <span><i class="fas fa-robot mr-2"></i> W - Assistant</span>
                 <button onclick="toggleChat()"><i class="fas fa-times"></i></button>
             </div>
-            <!-- Scrollable Message Area -->
             <div id="chat-messages" class="p-4 space-y-3 bg-slate-50">
                 <div class="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%]">Hello! I am **W**, your academic assistant. How can I help you today?</div>
             </div>
             <div id="chat-loader" class="hidden px-4 py-2 text-xs text-blue-600 italic animate-pulse">W is typing...</div>
-            <!-- Fixed Bottom Input Area -->
             <div class="p-3 bg-white border-t flex gap-2">
                 <input type="text" id="chat-input" placeholder="Type message to W..." class="flex-1 border rounded-full px-4 py-2 outline-none text-sm focus:border-blue-500" onkeypress="if(event.key === 'Enter') sendChatMessage()">
                 <button onclick="sendChatMessage()" class="bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-700"><i class="fas fa-paper-plane text-sm"></i></button>
@@ -198,6 +235,7 @@
             <i class="fas fa-comment-dots text-2xl"></i>
         </button>
     </div>
+
 <script>
 function showScreen(id) {
     const screens = ['home-screen', 'exam-screen', 'notes-screen', 'solve-screen', 'result-screen'];
@@ -214,7 +252,6 @@ function showScreen(id) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// --- FLOATING CHAT LOGIC ---
 function toggleChat() {
     const win = document.getElementById('chat-window');
     const isHidden = win.style.display === 'none' || win.style.display === '';
@@ -237,7 +274,7 @@ async function sendChatMessage() {
     try {
         if (!puter.auth.isSignedIn()) await puter.auth.signIn();
         const response = await puter.ai.chat(
-            [{ role: "system", content: "Your name is W. You are an expert academic assistant for Tanzanian teachers." }, 
+            [{ role: "system", content: "Your name is W. You are an expert academic assistant for Tanzanian teachers. Provide clear, direct help." }, 
              { role: "user", content: msg }],
             { model: 'meta-llama/llama-3.1-70b-instruct' }
         );
@@ -249,7 +286,7 @@ async function sendChatMessage() {
     }
 }
 
-// --- SPEED-MAXIMIZED WEBP PROCESSING ---
+// --- TASK 2: ENHANCE IMAGE (Blur, Contrast, Light, WebP) ---
 async function preprocessImages(files) {
     const imgs = await Promise.all(Array.from(files).map(file => 
         new Promise(res => {
@@ -264,7 +301,7 @@ async function preprocessImages(files) {
     ));
 
     const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d', { alpha: false });
+    const ctx = canvas.getContext('2d');
 
     const targetWidth = 1000; 
     let totalHeight = 0;
@@ -272,10 +309,9 @@ async function preprocessImages(files) {
 
     canvas.width = targetWidth;
     canvas.height = totalHeight;
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.filter = 'grayscale(100%) contrast(160%) brightness(110%)';
+    // TASK 2: Enhancement filters (Blur for smoothing, High Contrast/Light for OCR)
+    ctx.filter = 'contrast(1.5) brightness(1.2) blur(0.2px) grayscale(1)';
     
     let currentY = 0;
     imgs.forEach(img => {
@@ -284,7 +320,8 @@ async function preprocessImages(files) {
         currentY += h;
     });
 
-    return canvas.toDataURL('image/webp', 0.5);
+    // Output minimized WebP (quality 0.4)
+    return canvas.toDataURL('image/webp', 0.4);
 }
 
 // --- MAIN AI EXECUTION ---
@@ -305,47 +342,50 @@ async function executeAI(mode) {
         let fileInput = document.getElementById(mode === 'exam' ? 'examImages' : mode === 'notes' ? 'noteImages' : 'solveImage');
 
         if (fileInput && fileInput.files.length > 0) {
-            statusLabel.innerText = "Encoding WebP...";
+            statusLabel.innerText = "Enhancing Images to WebP...";
             imageData = await preprocessImages(fileInput.files);
-            statusLabel.innerText = "Scanning text...";
-            const result = await Tesseract.recognize(imageData, 'eng');
-            ocrText = result.data.text;
+            
+            statusLabel.innerText = "Scanning Text (Tesseract V5)...";
+            const { data: { text } } = await Tesseract.recognize(imageData, 'eng');
+            ocrText = text;
         }
 
-        statusLabel.innerText = "W is structuring content...";
+        statusLabel.innerText = "W is generating content...";
 
-        // Strict input capture
-        const topic = document.getElementById('examTopic')?.value || document.getElementById('noteTopic')?.value || "General";
+        const topic = (mode === 'exam' ? document.getElementById('examTopic')?.value : document.getElementById('noteTopic')?.value) || "General";
         const title = document.getElementById('examTitle')?.value || "THE UNITED REPUBLIC OF TANZANIA";
-        const level = document.getElementById('examLevel')?.value || document.getElementById('noteLevel')?.value || "Form";
+        const level = (mode === 'exam' ? document.getElementById('examGrade')?.value : document.getElementById('noteLevel')?.value) || "Form";
 
-        let systemRole = `You are a NECTA Examination and Lesson Note Architect.
-CRITICAL RULES:
-1. NEVER use Markdown (no asterisks **, no dashes -, no #). Provide the answers at the end.
-2. For Section Headings, ALWAYS use: <span class="section-head">SECTION A: MULTIPLE CHOICE QUESTIONS</span>.
-3. For Question numbers, use: <div class="question-block"><b>(i)</b> Question text...</div>.
-4. For MCQs, keep options on new lines: <br><b>A.</b> Option <b>B.</b> Option...
-5. Ensure the Section C instruction and the placeholder [IMAGE_HERE] are on separate lines.`;
+        let systemRole = `You are a NECTA Examination and Lesson Note Architect. 
+CRITICAL: 
+1. DO NOT use markdown like asterisks or hashtags.
+2. Section Headings MUST be: <span class="section-head">SECTION X: TITLE</span>.
+3. FOR EXAMS: You MUST include the exact tag [IMAGE_HERE] inside <span class="section-head">SECTION C</span> content. This is mandatory for drawing the image.`;
 
         let finalPrompt = "";
         if (mode === 'exam') {
-            const countA = document.getElementById('secA_count')?.value || 10;
-            const countB = document.getElementById('secB_count')?.value || 5;
-            const countC = document.getElementById('secC_count')?.value || 2;
+            const sA_c = document.getElementById('secA_count').value;
+            const sA_i = document.getElementById('secA_items').value;
+            const sA_t = document.getElementById('secA_type').value;
+            
+            const sB_c = document.getElementById('secB_count').value;
+            const sB_i = document.getElementById('secB_items').value;
+            const sB_t = document.getElementById('secB_type').value;
+            
+            const sC_c = document.getElementById('secC_count').value;
+            const sC_i = document.getElementById('secC_items').value;
+            const sC_t = document.getElementById('secC_type').value;
 
-            finalPrompt = `STRICT TOPIC: ${topic}. LEVEL: ${level}. INSTITUTION: ${title}.
-            TASK: 
-            1. SECTION A: Generate EXACTLY ${countA} MCQs based ONLY on ${topic}.
-            2. SECTION B: Generate EXACTLY ${countB} Short Answers based ONLY on ${topic}.
-            3. SECTION C: Generate EXACTLY ${countC} Questions based ONLY on this image context: "${ocrText}".
-            Requirement: Start Section C with the placeholder [IMAGE_HERE] on its own line.`;
+            finalPrompt = `Create an exam for ${level}. Topic: ${topic}. 
+- Section A: ${sA_c} questions (${sA_t}), each question must have ${sA_i} sub-items/parts.
+- Section B: ${sB_c} questions (${sB_t}), each question must have ${sB_i} sub-items/parts.
+- Section C: ${sC_c} questions (${sC_t}), each question must have ${sC_i} sub-items/parts.
+MANDATORY: In Section C, provide questions based on the image provided and write the tag [IMAGE_HERE] exactly where the image should be drawn. Image content info: ${ocrText}`;
         } else if (mode === 'notes') {
-            const subtopics = document.getElementById('noteSubtopics')?.value || "";
-            finalPrompt = `STRICT TOPIC: ${topic}. LEVEL: ${level}. SUB-TOPICS: ${subtopics}. 
-            CONTEXT: ${ocrText}. 
-            Create teaching notes for the sub-topics. Use <h3> and <ul> only. No Markdown.`;
+            const sub = document.getElementById('noteSubtopics').value;
+            finalPrompt = `Generate simple teaching notes for Level: ${level}, Topic: ${topic}. Subtopics: ${sub}. Image Info for reference: ${ocrText}. Use <h3> and <ul> tags. Do NOT use Section C here.`;
         } else if (mode === 'solve') {
-            finalPrompt = `Solve clearly: "${ocrText}". Wrap in <div class="solution-box">. List answers in <ol> then step-by-step.`;
+            finalPrompt = `Solve clearly: "${ocrText}". Start with answers in an <ol> list, then provide step-by-step logic.`;
         }
 
         const response = await puter.ai.chat(
@@ -354,14 +394,16 @@ CRITICAL RULES:
         );
 
         let aiResponse = response.message.content;
+        const imgHtml = `<div class="my-6 border-2 border-black p-2 text-center" contenteditable="false"><p class="text-xs uppercase font-bold">Figure/Source Material</p><img src="${imageData}" class="mx-auto max-h-[450px]"></div>`;
 
-        // CRITICAL FIX: Ensure image draws in Section C
-        if (imageData && aiResponse.includes("[IMAGE_HERE]")) {
-            const imgHtml = `<div class="my-6 border-2 border-black p-2 text-center" contenteditable="false">
-                <p class="font-bold italic text-sm mb-2">Study the figure below carefully:</p>
-                <img src="${imageData}" class="mx-auto max-h-[500px] border border-slate-300">
-            </div>`;
-            aiResponse = aiResponse.replace("[IMAGE_HERE]", imgHtml);
+        if (imageData) {
+            if (aiResponse.includes("[IMAGE_HERE]")) {
+                aiResponse = aiResponse.replace("[IMAGE_HERE]", imgHtml);
+            } else if (mode === 'exam' && aiResponse.includes("SECTION C")) {
+                aiResponse = aiResponse.replace(/(SECTION C:.*?)(\n|$)/i, `$1<br>${imgHtml}<br>`);
+            } else if (mode === 'notes') {
+                aiResponse += `<hr class="my-8"><p class="font-bold">Additional Reference:</p>${imgHtml}`;
+            }
         }
 
         loader.classList.add('hidden');
@@ -371,7 +413,7 @@ CRITICAL RULES:
     } catch (error) {
         loader.classList.add('hidden');
         output.classList.remove('hidden');
-        output.innerHTML = `<p style="color:red"><b>SYSTEM ERROR:</b> ${error.message}</p>`;
+        output.innerHTML = `<p style="color:red"><b>ERROR:</b> ${error.message}</p>`;
     }
 }
 
@@ -385,6 +427,5 @@ function copyResult() {
     alert("Copied!");
 }
 </script>
-    
 </body>
 </html>
