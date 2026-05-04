@@ -243,7 +243,7 @@ async function sendChatMessage() {
         const response = await puter.ai.chat(
             [{ role: "system", content: "Your name is W. You are an expert academic assistant for Tanzanian teachers. Provide clear, direct help." }, 
              { role: "user", content: msg }],
-            { model: 'meta-llama/llama-4-70b-instruct' }
+            { model: 'meta-llama/llama-3.1-70b-instruct' }
         );
         loader.classList.add('hidden');
         box.innerHTML += `<div class="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] text-sm"><b>W:</b> ${response.message.content}</div>`;
