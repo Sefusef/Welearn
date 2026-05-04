@@ -334,51 +334,54 @@ async function executeAI(mode) {
         RULES: No Markdown. Use <h3>, <span class="section-head">, <ul>, <li>, and <div class="question-block">.`;
 
         let finalPrompt = "";
-
-        if (mode === 'exam') {
-            // Capture specific counts from your UI
+if (mode === 'exam') {
             const countA = document.getElementById('secA_count')?.value || 10;
             const countB = document.getElementById('secB_count')?.value || 5;
-            const countC = document.getElementById('secC_count')?.value || 2;
-            
-            if (mode === 'exam') {
-            const countA = document.getElementById('secA_count')?.value || 10;
-            const countB = document.getElementById('secB_count')?.value || 5;
-            const countC = document.getElementById('secC_count')?.value || 2;
+            const countC = document.getElementById('secC_count')?.value || 1;
             
             finalPrompt = `
-            MAIN SUBJECT/TOPIC: ${topic}
-            ACADEMIC LEVEL: ${level}
+            TOPIC: ${topic}
+            LEVEL: ${level}
             INSTITUTION: ${title}
 
-            PRIMARY INSTRUCTIONS:
-            1. SECTION A: Generate EXACTLY ${countA} Multiple Choice Questions based ONLY on the MAIN SUBJECT/TOPIC (${topic}). Ignore image context for this section.
-            2. SECTION B: Generate EXACTLY ${countB} Short Answer Questions based ONLY on the MAIN SUBJECT/TOPIC (${topic}). Ignore image context for this section.
-            3. SECTION C: Generate EXACTLY ${countC} Analytical Questions. For THIS section only, use the context provided in the image scan below.
-            
-            IMAGE CONTEXT FOR SECTION C: 
-            "${ocrText}"
+            STRUCTURE:
+            - SECTION A: ${countA} Multiple Choice Questions based on ${topic}.
+            - SECTION B: ${countB} Short Answer Questions based on ${topic}.
+            - SECTION C: ${countC} Question(s) based on this text: "${ocrText}". 
 
-            FORMATTING:
-            - Place the placeholder [IMAGE_HERE] at the start of Section C.
-            - Follow NECTA standards for language and structure.
-            - Provide the answers for all sections at the very end of the document.`;
+            MANDATORY: You MUST start Section C with the exact text: [IMAGE_HERE]
+            
+            Provide answers at the end. No Markdown. Use <b>, <br>, and <div class="question-block">.`;
 
         } else if (mode === 'notes') {
             const subtopics = document.getElementById('noteSubtopics')?.value || "";
-            
-            finalPrompt = `
-            GOAL: Create teaching notes.
-            TOPIC: ${topic}
-            LEVEL: ${level}
-            REQUIRED SUB-TOPICS: ${subtopics}
-            
-            SOURCE MATERIAL:
-            - Primary Source: The Topic and Sub-topics provided above.
-            - Supporting Context (from image): ${ocrText}
-
-            INSTRUCTION: Prioritize the Topic and Sub-topics. Use the Supporting Context only to add detail. Use <h3> for headings and <ul> for points. No Markdown.`;
+            finalPrompt = `Topic: ${topic}. Level: ${level}. Sub-topics: ${subtopics}. Reference: ${ocrText}. Create teaching notes using <h3> and <ul>. No Markdown.`;
         }
+
+        const response = await puter.ai.chat(
+            [{ role: "system", content: systemRole }, { role: "user", content: finalPrompt }],
+            { model: 'meta-llama/llama-3.1-70b-instruct' }
+        );
+
+        let aiResponse = response.message.content;
+
+        // --- THE FIX: ENSURE IMAGE APPEARS ---
+        // If the AI forgot the tag but we have an image and a Section C, force the tag in.
+        if (imageData) {
+            if (!aiResponse.includes("[IMAGE_HERE]") && aiResponse.includes("SECTION C")) {
+                aiResponse = aiResponse.replace("SECTION C", "SECTION C <br> [IMAGE_HERE]");
+            }
+            
+            const imgHtml = `<div class="my-6 border-2 border-black p-2 text-center" contenteditable="false">
+                <p class="font-bold italic text-sm mb-2">Study the figure below carefully:</p>
+                <img src="${imageData}" class="mx-auto max-h-[450px] border border-slate-300">
+            </div>`;
+            aiResponse = aiResponse.replace("[IMAGE_HERE]", imgHtml);
+        }
+
+        loader.classList.add('hidden');
+        output.classList.remove('hidden');
+        output.innerHTML = aiResponse;
 
         // Using Llama 3.1 70b as it is currently the most stable high-end model on Puter
         const response = await puter.ai.chat(
