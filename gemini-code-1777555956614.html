@@ -124,7 +124,7 @@
                     <div><label class="block text-xs font-black uppercase text-slate-400 mb-2">Grade</label><input type="text" id="examGrade" placeholder="e.g. Form 2" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition"></div>
                 </div>
                 <div><label class="block text-xs font-black uppercase text-slate-400 mb-2">Topic</label><input type="text" id="examTopic" placeholder="Topic Name" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition"></div>
-                <div class="bg-blue-50 p-6 rounded-2xl border-2 border-dashed border-blue-200 text-center"><input type="file" id="examImages"></div>
+                <div class="bg-blue-50 p-6 rounded-2xl border-2 border-dashed border-blue-200 text-center"><input type="file" id="examImages" multiple></div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200"><span class="font-black text-blue-700 underline">Sec A</span><input type="number" id="secA_count" value="10" class="w-full border mt-2 p-2 rounded-lg"><input type="text" id="secA_type" value="MCQs" class="w-full border mt-1 p-2 rounded-lg"></div>
                     <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200"><span class="font-black text-blue-700 underline">Sec B</span><input type="number" id="secB_count" value="5" class="w-full border mt-2 p-2 rounded-lg"><input type="text" id="secB_type" value="Short Answers" class="w-full border mt-1 p-2 rounded-lg"></div>
@@ -144,7 +144,7 @@
                 <div><label class="block text-xs font-black uppercase text-slate-400 mb-2">Class Level</label><input type="text" id="noteLevel" placeholder="e.g. Form 1" class="w-full border-2 p-3 rounded-xl outline-none focus:border-emerald-500 transition"></div>
             </div>
             <div class="mb-6"><label class="block text-xs font-black uppercase text-slate-400 mb-2">Sub-topics</label><textarea id="noteSubtopics" placeholder="Comma separated subtopics" class="w-full h-24 border-2 p-3 rounded-xl outline-none focus:border-emerald-500 transition"></textarea></div>
-            <div class="bg-emerald-50 p-6 rounded-2xl border-2 border-dashed border-emerald-200 mb-6"><input type="file" id="noteImages"></div>
+            <div class="bg-emerald-50 p-6 rounded-2xl border-2 border-dashed border-emerald-200 mb-6"><input type="file" id="noteImages" multiple></div>
             <button onclick="executeAI('notes')" class="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl hover:bg-emerald-800 transition">GENERATE NOTES WITH W</button>
         </div>
     </section>
@@ -153,7 +153,7 @@
     <section id="solve-screen" class="hidden container mx-auto p-6 max-w-4xl">
         <div class="bg-white rounded-3xl shadow-2xl p-10 border border-slate-200 text-center">
             <h2 class="text-3xl font-black mb-6 text-purple-700 uppercase">Intelligent Solver</h2>
-            <div class="p-10 border-4 border-dashed border-purple-100 rounded-3xl mb-6 bg-purple-50"><input type="file" id="solveImage" class="mx-auto"></div>
+            <div class="p-10 border-4 border-dashed border-purple-100 rounded-3xl mb-6 bg-purple-50"><input type="file" id="solveImage" class="mx-auto" multiple></div>
             <button onclick="executeAI('solve')" class="w-full bg-purple-600 text-white font-black py-4 rounded-2xl hover:bg-purple-800 transition">SOLVE WITH W</button>
         </div>
     </section>
@@ -170,13 +170,13 @@
             </div>
             <div id="loaderDisplay" class="hidden flex flex-col items-center justify-center p-20">
                 <div class="loader rounded-full border-4 border-t-4 border-slate-200 h-16 w-16 mb-6"></div>
-                <p id="statusLabel" class="text-blue-600 font-black animate-pulse">W IS THINKING...</p>
+                <p id="statusLabel" class="text-blue-600 font-black animate-pulse uppercase">W IS THINKING...</p>
             </div>
             <div id="outputBox" contenteditable="true" class="prose-output text-lg p-8 bg-white text-slate-800"></div>
         </div>
     </section>
 
-    <!-- FLOATING CHAT BUTTON (TASK 2 - SCROLLABLE & NAMED W) -->
+    <!-- FLOATING CHAT BUTTON -->
     <div id="chat-widget" class="no-print">
         <div id="chat-window" class="bg-white shadow-2xl rounded-2xl border border-slate-200 mb-4 overflow-hidden flex flex-col">
             <div class="bg-blue-700 p-4 text-white font-bold flex justify-between items-center">
@@ -199,114 +199,183 @@
         </button>
     </div>
 
-    <script>
-        function showScreen(id) {
-            const screens = ['home-screen', 'exam-screen', 'notes-screen', 'solve-screen', 'result-screen'];
-            screens.forEach(s => {
-                const el = document.getElementById(s);
-                if(el) { el.classList.add('hidden'); el.classList.remove('active-screen'); }
-            });
-            const target = document.getElementById(id);
-            if(target) { target.classList.remove('hidden'); target.classList.add('active-screen'); }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+    <!-- Ensure your file inputs in the HTML look like this to support multiple images:
+<input type="file" id="examImages" multiple accept="image/*"> 
+-->
+<script>
+function showScreen(id) {
+    const screens = ['home-screen', 'exam-screen', 'notes-screen', 'solve-screen', 'result-screen'];
+    screens.forEach(s => {
+        const el = document.getElementById(s);
+        if(el) el.classList.add('hidden');
+        if(el) el.classList.remove('active-screen');
+    });
+    const target = document.getElementById(id);
+    if(target) {
+        target.classList.remove('hidden');
+        target.classList.add('active-screen');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// --- FLOATING CHAT LOGIC ---
+function toggleChat() {
+    const win = document.getElementById('chat-window');
+    const isHidden = win.style.display === 'none' || win.style.display === '';
+    win.style.display = isHidden ? 'flex' : 'none';
+    if(isHidden) document.getElementById('chat-input').focus();
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const box = document.getElementById('chat-messages');
+    const loader = document.getElementById('chat-loader');
+    const msg = input.value.trim();
+    if(!msg) return;
+
+    box.innerHTML += `<div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none shadow-md max-w-[85%] self-end ml-auto text-sm">${msg}</div>`;
+    input.value = '';
+    box.scrollTop = box.scrollHeight;
+    loader.classList.remove('hidden');
+
+    try {
+        if (!puter.auth.isSignedIn()) await puter.auth.signIn();
+        const response = await puter.ai.chat(
+            [{ role: "system", content: "Your name is W. You are an expert academic assistant for Tanzanian teachers. Provide clear, direct help." }, 
+             { role: "user", content: msg }],
+            { model: 'meta-llama/llama-3.1-70b-instruct' }
+        );
+        loader.classList.add('hidden');
+        box.innerHTML += `<div class="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] text-sm"><b>W:</b> ${response.message.content}</div>`;
+        box.scrollTop = box.scrollHeight;
+    } catch(e) {
+        loader.classList.add('hidden');
+    }
+}
+
+// --- ULTRA-FAST WEBP IMAGE PROCESSING ---
+async function preprocessImages(files) {
+    const imgs = await Promise.all(Array.from(files).map(file => 
+        new Promise(res => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image();
+                img.onload = () => res(img);
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        })
+    ));
+
+    const canvas = document.createElement('canvas');
+    // Speed Optimization: Disable alpha channel for faster rendering
+    const ctx = canvas.getContext('2d', { alpha: false });
+
+    const targetWidth = 1000; 
+    let totalHeight = 0;
+    imgs.forEach(img => totalHeight += targetWidth * (img.height / img.width));
+
+    canvas.width = targetWidth;
+    canvas.height = totalHeight;
+
+    // Fill background with white (since alpha is disabled)
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Sharpening for low-vision text
+    ctx.filter = 'grayscale(100%) contrast(150%) brightness(110%)';
+    
+    let currentY = 0;
+    imgs.forEach(img => {
+        const h = targetWidth * (img.height / img.width);
+        ctx.drawImage(img, 0, currentY, targetWidth, h);
+        currentY += h;
+    });
+
+    // WebP at 0.5 quality is extremely small but maintains sharp text edges for OCR
+    return canvas.toDataURL('image/webp', 0.5);
+}
+
+// --- MAIN AI EXECUTION ---
+async function executeAI(mode) {
+    const output = document.getElementById('outputBox');
+    const loader = document.getElementById('loaderDisplay');
+    const statusLabel = document.getElementById('statusLabel');
+
+    showScreen('result-screen');
+    output.classList.add('hidden');
+    loader.classList.remove('hidden');
+
+    try {
+        if (!puter.auth.isSignedIn()) await puter.auth.signIn();
+
+        let ocrText = "";
+        let imageData = "";
+        let fileInput = document.getElementById(mode === 'exam' ? 'examImages' : mode === 'notes' ? 'noteImages' : 'solveImage');
+
+        if (fileInput && fileInput.files.length > 0) {
+            statusLabel.innerText = "Encoding to WebP for speed...";
+            imageData = await preprocessImages(fileInput.files);
+            
+            statusLabel.innerText = "Scanning text...";
+            const result = await Tesseract.recognize(imageData, 'eng');
+            ocrText = result.data.text;
         }
 
-        function toggleChat() {
-            const win = document.getElementById('chat-window');
-            const isHidden = win.style.display === 'none' || win.style.display === '';
-            win.style.display = isHidden ? 'flex' : 'none';
-            if(isHidden) document.getElementById('chat-input').focus();
+        statusLabel.innerText = "W is generating content...";
+
+        const topic = document.getElementById('examTopic')?.value || "General";
+        const title = document.getElementById('examTitle')?.value || "THE UNITED REPUBLIC OF TANZANIA";
+        const level = document.getElementById('examLevel')?.value || "Form";
+
+        let systemRole = `You are a NECTA Examination and Lesson Note Architect.
+CRITICAL RULES:
+1. NEVER use Markdown (no asterisks **, no dashes -, no #). Provide the answers at the end of the examination.
+2. For Section Headings, ALWAYS use: <span class="section-head">SECTION A: MULTIPLE CHOICE QUESTIONS</span>.
+3. For Question numbers, use: <div class="question-block"><b>(i)</b> Question text...</div>.
+4. For MCQs, keep options on new lines: <br><b>A.</b> Option <b>B.</b> Option...
+5. Ensure the Section C, its instruction and the placeholder [IMAGE_HERE] are on separate lines for clarity.`;
+
+        let finalPrompt = "";
+        if (mode === 'exam') {
+            finalPrompt = `Subject: ${level}. Institution: ${title}. Topic: ${topic}. Context: ${ocrText}. Task: Create a formal exam with Section A (Multiple Choice), Section B (Short Answers), and Section C (Analysis based on an image). In Section C, include the placeholder [IMAGE_HERE].`;
+        } else if (mode === 'notes') {
+            finalPrompt = `Topic: ${topic}. Content: ${ocrText || ""}. Create very short summary notes. Use <h3> and <ul>.`;
+        } else if (mode === 'solve') {
+            finalPrompt = `Solve clearly: "${ocrText}". Wrap in <div class="solution-box">. Use <b>Step-by-step:</b> list. At the Top list the answers only nested in <ol> </ol> odered list tag, add the step-by-step explaination `;
         }
 
-        async function sendChatMessage() {
-            const input = document.getElementById('chat-input');
-            const box = document.getElementById('chat-messages');
-            const loader = document.getElementById('chat-loader');
-            const msg = input.value.trim();
-            if(!msg) return;
+        const response = await puter.ai.chat(
+            [{ role: "system", content: systemRole }, { role: "user", content: finalPrompt }],
+            { model: 'meta-llama/llama-3.1-70b-instruct' }
+        );
 
-            box.innerHTML += `<div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none shadow-md max-w-[85%] self-end ml-auto">${msg}</div>`;
-            input.value = '';
-            box.scrollTop = box.scrollHeight;
-            loader.classList.remove('hidden');
+        let aiResponse = response.message.content;
 
-            try {
-                if (!puter.auth.isSignedIn()) await puter.auth.signIn();
-                const response = await puter.ai.chat(
-                    [{ role: "system", content: "Your name is W. You are an expert academic assistant for Tanzanian teachers. Provide clear, direct help." }, 
-                     { role: "user", content: msg }],
-                    { model: 'meta-llama/llama-3.1-70b-instruct' }
-                );
-                
-                loader.classList.add('hidden');
-                box.innerHTML += `<div class="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%]"><b>W:</b> ${response.message.content}</div>`;
-                box.scrollTop = box.scrollHeight;
-            } catch(e) {
-                loader.classList.add('hidden');
-                box.innerHTML += `<div class="text-red-500 text-xs p-2">Error: Check connection.</div>`;
-            }
+        if (imageData && aiResponse.includes("[IMAGE_HERE]")) {
+            aiResponse = aiResponse.replace("[IMAGE_HERE]", `<div class="my-6 border-2 border-black p-2 text-center" contenteditable="false"><img src="${imageData}" class="mx-auto max-h-[400px]"></div>`);
         }
 
-        async function executeAI(mode) {
-            const output = document.getElementById('outputBox');
-            const loader = document.getElementById('loaderDisplay');
-            const statusLabel = document.getElementById('statusLabel');
-            showScreen('result-screen');
-            output.classList.add('hidden');
-            loader.classList.remove('hidden');
+        loader.classList.add('hidden');
+        output.classList.remove('hidden');
+        output.innerHTML = aiResponse;
 
-            try {
-                if (!puter.auth.isSignedIn()) await puter.auth.signIn();
-                let ocrText = "";
-                let imageData = "";
-                let fileInput = (mode === 'exam') ? document.getElementById('examImages') : (mode === 'notes') ? document.getElementById('noteImages') : document.getElementById('solveImage');
+    } catch (error) {
+        loader.classList.add('hidden');
+        output.classList.remove('hidden');
+        output.innerHTML = `<p style="color:red"><b>ERROR:</b> ${error.message}</p>`;
+    }
+}
 
-                if (fileInput && fileInput.files[0]) {
-                    statusLabel.innerText = "W IS SCANNING IMAGE...";
-                    const reader = new FileReader();
-                    imageData = await new Promise(r => { reader.onload=e=>r(e.target.result); reader.readAsDataURL(fileInput.files[0]); });
-                    const result = await Tesseract.recognize(imageData, 'eng');
-                    ocrText = result.data.text;
-                }
-
-                statusLabel.innerText = "W IS WRITING CONTENT...";
-                let finalPrompt = "";
-                if (mode === 'exam') {
-                    finalPrompt = `Subject: ${document.getElementById('examSubject').value}. Topic: ${document.getElementById('examTopic').value}. OCR: ${ocrText}. Generate NECTA exam.`;
-                } else if (mode === 'notes') {
-                    finalPrompt = `Create short clear notes for ${document.getElementById('noteLevel').value}. Topic: ${document.getElementById('noteTopic').value}. Subs: ${document.getElementById('noteSubtopics').value}. Reference: ${ocrText}. Use [IMAGE_HERE] tag.`;
-                } else if (mode === 'solve') {
-                    finalPrompt = `Solve clearly: ${ocrText}.`;
-                }
-
-                const response = await puter.ai.chat(
-                    [{ role: "system", content: "You are W. NO Markdown. Use <h3>, <span class='section-head'>, <ul>, <li>." }, { role: "user", content: finalPrompt }],
-                    { model: 'meta-llama/llama-3.1-70b-instruct' }
-                );
-                
-                let aiResponse = response.message.content;
-                if (imageData && aiResponse.includes("[IMAGE_HERE]")) {
-                    aiResponse = aiResponse.replace("[IMAGE_HERE]", `<div class="my-6 border p-2 text-center"><img src="${imageData}" class="mx-auto max-h-[400px]"></div>`);
-                }
-                loader.classList.add('hidden');
-                output.classList.remove('hidden');
-                output.innerHTML = aiResponse;
-            } catch (error) {
-                loader.classList.add('hidden');
-                output.classList.remove('hidden');
-                output.innerHTML = `<p class="text-red-600">Error: ${error.message}</p>`;
-            }
-        }
-
-        function copyResult() {
-            const el = document.getElementById('outputBox');
-            const range = document.createRange();
-            range.selectNode(el);
-            window.getSelection().removeAllRanges();
-            window.getSelection().addRange(range);
-            document.execCommand('copy');
-            alert("Copied!");
-        }
-    </script>
+function copyResult() {
+    const el = document.getElementById('outputBox');
+    const range = document.createRange();
+    range.selectNode(el);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    document.execCommand('copy');
+    alert("Copied!");
+}
+</script>
 </body>
 </html>
