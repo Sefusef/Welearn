@@ -16,7 +16,6 @@
         .loader { border-top-color: #2563eb; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* THE "BEST APPEARANCE" STYLING */
         .prose-output { 
             font-family: 'Times New Roman', Times, serif; 
             line-height: 1.6; 
@@ -35,70 +34,37 @@
         table { width: 100%; border-collapse: collapse; margin: 15px 0; border: 1px solid black; }
         th, td { border: 1px solid black; padding: 8px; vertical-align: top; }
         
-        /* PRINT CONFIGURATION FOR ISO A4 */
-        @page {
-            size: A4;
-            margin: 15mm; /* Standard A4 margins */
-        }
+        @page { size: A4; margin: 15mm; }
 
         @media print {
-            /* Hide UI elements */
-            nav, .no-print, .instructions-tag, button, #home-screen, #exam-screen, #notes-screen, #solve-screen { 
+            nav, .no-print, .instructions-tag, button, #home-screen, #exam-screen, #notes-screen, #solve-screen, #chat-widget { 
                 display: none !important; 
             }
-            
-            /* Reset body for printing */
-            body { 
-                background: white !important; 
-                margin: 0 !important; 
-                padding: 0 !important; 
-                -webkit-print-color-adjust: exact;
-            }
-
-            /* Ensure the result container takes full A4 width */
-            .container { 
-                max-width: 100% !important; 
-                width: 100% !important; 
-                padding: 0 !important; 
-                margin: 0 !important; 
-                box-shadow: none !important;
-                border: none !important;
-            }
-
-            #result-screen { 
-                display: block !important;
-                padding: 0 !important; 
-                margin: 0 !important; 
-            }
-
-            .bg-white { 
-                border: none !important; 
-                box-shadow: none !important; 
-            }
-
-            .prose-output { 
-                border: none !important; 
-                padding: 0 !important;
-                margin: 0 !important;
-                width: 100% !important;
-                font-size: 12pt; /* Professional print size */
-            }
+            body { background: white !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact; }
+            .container { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; border: none !important; }
+            #result-screen { display: block !important; padding: 0 !important; margin: 0 !important; }
+            .prose-output { border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; font-size: 12pt; }
         }
 
-        /* Watermark logic (if needed for generated tables) */
-        .special-event-active::before {
-            content: attr(data-event);
-            position: absolute;
-            top: 50%;
-            left: 40%;
-            transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 80px;
-            font-weight: bold;
-            color: rgba(0, 0, 0, 0.08);
-            z-index: 0;
-            pointer-events: none;
-            white-space: nowrap;
+        /* Floating Chat Styles */
+        #chat-widget { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
+        #chat-window { 
+            width: 350px; 
+            height: 480px; 
+            max-height: 80vh;
+            flex-direction: column; 
+            display: none;
         }
+        /* Custom Scrollbar for Chat */
+        #chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+        #chat-messages::-webkit-scrollbar { width: 5px; }
+        #chat-messages::-webkit-scrollbar-track { background: transparent; }
+        #chat-messages::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen">
@@ -118,7 +84,7 @@
     <!-- 1. HOME SCREEN -->
     <section id="home-screen" class="container mx-auto p-8 text-center mt-10 active-screen">
         <h2 class="text-4xl font-black mb-4 text-slate-800 uppercase tracking-tight">Academic AI Suite</h2>
-        <p class="text-slate-500 mb-12 text-lg max-w-2xl mx-auto">Professional tools for Tanzanian Educators. Generate exams, summarize textbooks, and solve questions instantly.</p>
+        <p class="text-slate-500 mb-12 text-lg max-w-2xl mx-auto">Professional tools for Tanzanian Educators. Generate exams, create notes, and solve questions instantly with **W**.</p>
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             <div onclick="showScreen('exam-screen')" class="bg-white p-10 rounded-3xl shadow-sm hover:shadow-2xl transition-all border-b-8 border-blue-600 cursor-pointer group">
@@ -130,10 +96,10 @@
             </div>
             <div onclick="showScreen('notes-screen')" class="bg-white p-10 rounded-3xl shadow-sm hover:shadow-2xl transition-all border-b-8 border-emerald-600 cursor-pointer group">
                 <div class="w-20 h-20 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-emerald-600 transition-colors">
-                    <i class="fas fa-book-reader text-4xl text-emerald-600 group-hover:text-white"></i>
+                    <i class="fas fa-book-open text-4xl text-emerald-600 group-hover:text-white"></i>
                 </div>
-                <h3 class="text-2xl font-black">Note Summarizer</h3>
-                <p class="text-slate-500 mt-3 text-sm">Convert textbook photos or handwritten notes into concise revision bullet points.</p>
+                <h3 class="text-2xl font-black">Notes Creator</h3>
+                <p class="text-slate-500 mt-3 text-sm">Generate structured, simple, and clear teaching notes for any level.</p>
             </div>
             <div onclick="showScreen('solve-screen')" class="bg-white p-10 rounded-3xl shadow-sm hover:shadow-2xl transition-all border-b-8 border-purple-600 cursor-pointer group">
                 <div class="w-20 h-20 bg-purple-50 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-purple-600 transition-colors">
@@ -153,73 +119,33 @@
             </div>
             <form id="examForm" class="p-8 space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="md:col-span-1">
-                        <label class="block text-xs font-black uppercase text-slate-400 mb-2">Institution/Title</label>
-                        <input type="text" id="examTitle" placeholder="e.g., THE UNITED REPUBLIC OF TANZANIA" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-black uppercase text-slate-400 mb-2">Subject</label>
-                        <input type="text" id="examSubject" placeholder="e.g. Geography" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-black uppercase text-slate-400 mb-2">Grade/Level</label>
-                        <input type="text" id="examGrade" placeholder="e.g. Form 4" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition">
-                    </div>
+                    <div><label class="block text-xs font-black uppercase text-slate-400 mb-2">Institution/Title</label><input type="text" id="examTitle" placeholder="e.g. NECTA" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition"></div>
+                    <div><label class="block text-xs font-black uppercase text-slate-400 mb-2">Subject</label><input type="text" id="examSubject" placeholder="e.g. History" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition"></div>
+                    <div><label class="block text-xs font-black uppercase text-slate-400 mb-2">Grade</label><input type="text" id="examGrade" placeholder="e.g. Form 2" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition"></div>
                 </div>
-                <div>
-                    <label class="block text-xs font-black uppercase text-slate-400 mb-2">Specific Topic for Analysis</label>
-                    <input type="text" id="examTopic" placeholder="e.g. Map Reading, Environment, or Human Activities" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition">
-                </div>
-                <div class="bg-blue-50 p-6 rounded-2xl border-2 border-dashed border-blue-200 text-center">
-                    <label class="block font-bold text-blue-800 mb-2 italic">Upload Map or Diagram for Analysis</label>
-                    <input type="file" id="examImages" class="text-sm">
-                </div>
-                
-                <!-- NEW STRUCTURED SECTIONS -->
+                <div><label class="block text-xs font-black uppercase text-slate-400 mb-2">Topic</label><input type="text" id="examTopic" placeholder="Topic Name" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition"></div>
+                <div class="bg-blue-50 p-6 rounded-2xl border-2 border-dashed border-blue-200 text-center"><input type="file" id="examImages"></div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                        <span class="font-black text-blue-700 block mb-2 underline">Section A</span>
-                        <div class="space-y-2">
-                            <input type="number" id="secA_count" placeholder="Items (Qty)" class="w-full border p-2 rounded-lg" value="10">
-                            <input type="text" id="secA_type" placeholder="Description (e.g. MCQs)" class="w-full border p-2 rounded-lg" value="Multiple Choice Questions">
-                        </div>
-                    </div>
-                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                        <span class="font-black text-blue-700 block mb-2 underline">Section B</span>
-                        <div class="space-y-2">
-                            <input type="number" id="secB_count" placeholder="Items (Qty)" class="w-full border p-2 rounded-lg" value="5">
-                            <input type="text" id="secB_type" placeholder="Description (e.g. Match items)" class="w-full border p-2 rounded-lg" value="Short Answer Questions">
-                        </div>
-                    </div>
-                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                        <span class="font-black text-blue-700 block mb-2 underline">Section C</span>
-                        <div class="space-y-2">
-                            <input type="number" id="secC_count" placeholder="Items (Qty)" class="w-full border p-2 rounded-lg" value="2">
-                            <input type="text" id="secC_type" placeholder="Description (e.g. Essay)" class="w-full border p-2 rounded-lg" value="Essay or Analysis Questions">
-                        </div>
-                    </div>
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200"><span class="font-black text-blue-700 underline">Sec A</span><input type="number" id="secA_count" value="10" class="w-full border mt-2 p-2 rounded-lg"><input type="text" id="secA_type" value="MCQs" class="w-full border mt-1 p-2 rounded-lg"></div>
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200"><span class="font-black text-blue-700 underline">Sec B</span><input type="number" id="secB_count" value="5" class="w-full border mt-2 p-2 rounded-lg"><input type="text" id="secB_type" value="Short Answers" class="w-full border mt-1 p-2 rounded-lg"></div>
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200"><span class="font-black text-blue-700 underline">Sec C</span><input type="number" id="secC_count" value="2" class="w-full border mt-2 p-2 rounded-lg"><input type="text" id="secC_type" value="Essays" class="w-full border mt-1 p-2 rounded-lg"></div>
                 </div>
-                
-                <button type="button" onclick="executeAI('exam')" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl hover:bg-blue-800 transition transform hover:-translate-y-1 shadow-lg">GENERATE WITH AI</button>
+                <button type="button" onclick="executeAI('exam')" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl hover:bg-blue-800 transition shadow-lg">GENERATE WITH W</button>
             </form>
         </div>
     </section>
 
-    <!-- 3. NOTES SUMMARIZER SCREEN -->
+    <!-- 3. NOTES CREATOR SCREEN -->
     <section id="notes-screen" class="hidden container mx-auto p-6 max-w-4xl">
         <div class="bg-white rounded-3xl shadow-2xl p-8 border border-slate-200">
-            <h2 class="text-3xl font-black mb-6 text-emerald-700 uppercase"><i class="fas fa-bolt mr-3"></i>AI Note Summarizer</h2>
+            <h2 class="text-3xl font-black mb-6 text-emerald-700 uppercase"><i class="fas fa-edit mr-3"></i>AI Lesson Note Creator</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div class="bg-emerald-50 p-6 rounded-2xl border-2 border-dashed border-emerald-200">
-                    <label class="block font-bold mb-2 text-emerald-800">Scan Page (Image)</label>
-                    <input type="file" id="noteImages" class="text-sm">
-                </div>
-                <div class="flex items-center justify-center p-6 bg-slate-50 rounded-2xl border border-slate-200">
-                    <p class="text-xs text-slate-400 font-bold uppercase italic text-center">OR PASTE TEXT MANUALLY BELOW</p>
-                </div>
+                <div><label class="block text-xs font-black uppercase text-slate-400 mb-2">Main Topic</label><input type="text" id="noteTopic" placeholder="Main Topic" class="w-full border-2 p-3 rounded-xl outline-none focus:border-emerald-500 transition"></div>
+                <div><label class="block text-xs font-black uppercase text-slate-400 mb-2">Class Level</label><input type="text" id="noteLevel" placeholder="e.g. Form 1" class="w-full border-2 p-3 rounded-xl outline-none focus:border-emerald-500 transition"></div>
             </div>
-            <textarea id="notesInput" placeholder="Paste textbook content or notes here..." class="w-full h-64 border-2 p-4 rounded-2xl mb-4 focus:border-emerald-500 outline-none transition shadow-inner"></textarea>
-            <button onclick="executeAI('notes')" class="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl hover:bg-emerald-800 transition">GENERATE SUMMARY</button>
+            <div class="mb-6"><label class="block text-xs font-black uppercase text-slate-400 mb-2">Sub-topics</label><textarea id="noteSubtopics" placeholder="Comma separated subtopics" class="w-full h-24 border-2 p-3 rounded-xl outline-none focus:border-emerald-500 transition"></textarea></div>
+            <div class="bg-emerald-50 p-6 rounded-2xl border-2 border-dashed border-emerald-200 mb-6"><input type="file" id="noteImages"></div>
+            <button onclick="executeAI('notes')" class="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl hover:bg-emerald-800 transition">GENERATE NOTES WITH W</button>
         </div>
     </section>
 
@@ -227,170 +153,148 @@
     <section id="solve-screen" class="hidden container mx-auto p-6 max-w-4xl">
         <div class="bg-white rounded-3xl shadow-2xl p-10 border border-slate-200 text-center">
             <h2 class="text-3xl font-black mb-6 text-purple-700 uppercase">Intelligent Solver</h2>
-            <div class="p-10 border-4 border-dashed border-purple-100 rounded-3xl mb-6 bg-purple-50">
-                <i class="fas fa-camera-retro text-6xl text-purple-200 mb-4"></i>
-                <p class="text-slate-500 mb-4 font-bold">Upload a clear photo of the question</p>
-                <input type="file" id="solveImage" class="block mx-auto text-sm">
-            </div>
-            <button onclick="executeAI('solve')" class="w-full bg-purple-600 text-white font-black py-4 rounded-2xl hover:bg-purple-800 transition">SOLVE NOW</button>
+            <div class="p-10 border-4 border-dashed border-purple-100 rounded-3xl mb-6 bg-purple-50"><input type="file" id="solveImage" class="mx-auto"></div>
+            <button onclick="executeAI('solve')" class="w-full bg-purple-600 text-white font-black py-4 rounded-2xl hover:bg-purple-800 transition">SOLVE WITH W</button>
         </div>
     </section>
 
     <!-- 5. RESULTS SCREEN -->
     <section id="result-screen" class="hidden container mx-auto p-6 max-w-5xl mb-20">
         <div class="bg-white rounded-3xl shadow-2xl p-8 border border-blue-100">
-            <div class="flex flex-wrap justify-between items-center mb-6 border-b pb-4 gap-4 no-print">
-                <div>
-                    <h2 class="text-2xl font-black text-blue-900 tracking-tight">AI GENERATED RESULT</h2>
-                    <p class="text-xs text-blue-500 font-bold italic instructions-tag">You can click and edit the text below before printing.</p>
-                </div>
+            <div class="flex justify-between items-center mb-6 border-b pb-4 no-print">
+                <h2 class="text-2xl font-black text-blue-900 tracking-tight">AI GENERATED RESULT</h2>
                 <div class="flex space-x-3">
-                    <button onclick="copyResult()" class="bg-slate-100 hover:bg-slate-200 p-2 px-6 rounded-xl font-bold transition">Copy</button>
-                    <button onclick="window.print()" class="bg-blue-600 text-white p-2 px-6 rounded-xl font-bold hover:bg-blue-700 transition">Save/Print PDF</button>
+                    <button onclick="copyResult()" class="bg-slate-100 p-2 px-6 rounded-xl font-bold">Copy</button>
+                    <button onclick="window.print()" class="bg-blue-600 text-white p-2 px-6 rounded-xl font-bold">Save PDF</button>
                 </div>
             </div>
-            
             <div id="loaderDisplay" class="hidden flex flex-col items-center justify-center p-20">
                 <div class="loader rounded-full border-4 border-t-4 border-slate-200 h-16 w-16 mb-6"></div>
-                <p id="statusLabel" class="text-blue-600 font-black tracking-widest animate-pulse uppercase">Processing...</p>
+                <p id="statusLabel" class="text-blue-600 font-black animate-pulse">W IS THINKING...</p>
             </div>
-
-            <!-- EDITABLE OUTPUT CONTAINER -->
-            <div id="outputBox" contenteditable="true" class="prose-output text-lg p-8 bg-white text-slate-800">
-                Ready for input...
-            </div>
+            <div id="outputBox" contenteditable="true" class="prose-output text-lg p-8 bg-white text-slate-800"></div>
         </div>
     </section>
+
+    <!-- FLOATING CHAT BUTTON (TASK 2 - SCROLLABLE & NAMED W) -->
+    <div id="chat-widget" class="no-print">
+        <div id="chat-window" class="bg-white shadow-2xl rounded-2xl border border-slate-200 mb-4 overflow-hidden flex flex-col">
+            <div class="bg-blue-700 p-4 text-white font-bold flex justify-between items-center">
+                <span><i class="fas fa-robot mr-2"></i> W - Assistant</span>
+                <button onclick="toggleChat()"><i class="fas fa-times"></i></button>
+            </div>
+            <!-- Scrollable Message Area -->
+            <div id="chat-messages" class="p-4 space-y-3 bg-slate-50">
+                <div class="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%]">Hello! I am **W**, your academic assistant. How can I help you today?</div>
+            </div>
+            <div id="chat-loader" class="hidden px-4 py-2 text-xs text-blue-600 italic animate-pulse">W is typing...</div>
+            <!-- Fixed Bottom Input Area -->
+            <div class="p-3 bg-white border-t flex gap-2">
+                <input type="text" id="chat-input" placeholder="Type message to W..." class="flex-1 border rounded-full px-4 py-2 outline-none text-sm focus:border-blue-500" onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                <button onclick="sendChatMessage()" class="bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-700"><i class="fas fa-paper-plane text-sm"></i></button>
+            </div>
+        </div>
+        <button onclick="toggleChat()" class="bg-blue-600 text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center hover:bg-blue-700 transition-all transform hover:scale-110">
+            <i class="fas fa-comment-dots text-2xl"></i>
+        </button>
+    </div>
 
     <script>
         function showScreen(id) {
             const screens = ['home-screen', 'exam-screen', 'notes-screen', 'solve-screen', 'result-screen'];
             screens.forEach(s => {
                 const el = document.getElementById(s);
-                if(el) el.classList.add('hidden');
-                if(el) el.classList.remove('active-screen');
+                if(el) { el.classList.add('hidden'); el.classList.remove('active-screen'); }
             });
             const target = document.getElementById(id);
-            if(target) {
-                target.classList.remove('hidden');
-                target.classList.add('active-screen');
-            }
+            if(target) { target.classList.remove('hidden'); target.classList.add('active-screen'); }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function preprocessImage(file) {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const imgObj = new Image();
-                    imgObj.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        const maxW = 1200; 
-                        const scale = Math.min(1, maxW / imgObj.width);
-                        canvas.width = imgObj.width * scale;
-                        canvas.height = imgObj.height * scale;
-                        ctx.filter = 'grayscale(100%) contrast(150%)';
-                        ctx.drawImage(imgObj, 0, 0, canvas.width, canvas.height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.8));
-                    };
-                    imgObj.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            });
+        function toggleChat() {
+            const win = document.getElementById('chat-window');
+            const isHidden = win.style.display === 'none' || win.style.display === '';
+            win.style.display = isHidden ? 'flex' : 'none';
+            if(isHidden) document.getElementById('chat-input').focus();
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const box = document.getElementById('chat-messages');
+            const loader = document.getElementById('chat-loader');
+            const msg = input.value.trim();
+            if(!msg) return;
+
+            box.innerHTML += `<div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none shadow-md max-w-[85%] self-end ml-auto">${msg}</div>`;
+            input.value = '';
+            box.scrollTop = box.scrollHeight;
+            loader.classList.remove('hidden');
+
+            try {
+                if (!puter.auth.isSignedIn()) await puter.auth.signIn();
+                const response = await puter.ai.chat(
+                    [{ role: "system", content: "Your name is W. You are an expert academic assistant for Tanzanian teachers. Provide clear, direct help." }, 
+                     { role: "user", content: msg }],
+                    { model: 'meta-llama/llama-3.1-70b-instruct' }
+                );
+                
+                loader.classList.add('hidden');
+                box.innerHTML += `<div class="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%]"><b>W:</b> ${response.message.content}</div>`;
+                box.scrollTop = box.scrollHeight;
+            } catch(e) {
+                loader.classList.add('hidden');
+                box.innerHTML += `<div class="text-red-500 text-xs p-2">Error: Check connection.</div>`;
+            }
         }
 
         async function executeAI(mode) {
             const output = document.getElementById('outputBox');
             const loader = document.getElementById('loaderDisplay');
             const statusLabel = document.getElementById('statusLabel');
-            
             showScreen('result-screen');
             output.classList.add('hidden');
             loader.classList.remove('hidden');
 
             try {
                 if (!puter.auth.isSignedIn()) await puter.auth.signIn();
-
                 let ocrText = "";
                 let imageData = "";
-                let fileInput;
-                if (mode === 'exam') fileInput = document.getElementById('examImages');
-                if (mode === 'notes') fileInput = document.getElementById('noteImages');
-                if (mode === 'solve') fileInput = document.getElementById('solveImage');
+                let fileInput = (mode === 'exam') ? document.getElementById('examImages') : (mode === 'notes') ? document.getElementById('noteImages') : document.getElementById('solveImage');
 
                 if (fileInput && fileInput.files[0]) {
-                    statusLabel.innerText = "Extracting details from image...";
-                    imageData = await preprocessImage(fileInput.files[0]);
+                    statusLabel.innerText = "W IS SCANNING IMAGE...";
+                    const reader = new FileReader();
+                    imageData = await new Promise(r => { reader.onload=e=>r(e.target.result); reader.readAsDataURL(fileInput.files[0]); });
                     const result = await Tesseract.recognize(imageData, 'eng');
                     ocrText = result.data.text;
                 }
 
-                statusLabel.innerText = "AI is structuring content...";
-
-                let systemRole = `You are a NECTA Examination and Lesson Note Architect.
-CRITICAL RULES:
-1. NEVER use Markdown (no asterisks **, no dashes -, no #). Provide the answers at the end of the examination.
-2. For Section Headings, ALWAYS use: <span class="section-head">SECTION X: DESCRIPTION</span>.
-3. For Question numbers, use: <div class="question-block"><b>(i)</b> Question text...</div>.
-4. For MCQs, keep options on new lines: <br><b>A.</b> Option <b>B.</b> Option...
-5. Ensure the Section C, its instruction and the placeholder [IMAGE_HERE] are on separate lines for clarity.`;
-                
+                statusLabel.innerText = "W IS WRITING CONTENT...";
                 let finalPrompt = "";
                 if (mode === 'exam') {
-                    const title = document.getElementById('examTitle').value || "THE UNITED REPUBLIC OF TANZANIA";
-                    const subject = document.getElementById('examSubject').value || "General Study";
-                    const grade = document.getElementById('examGrade').value || "Level";
-                    const topic = document.getElementById('examTopic')?.value || "General";
-                    
-                    const secA_q = document.getElementById('secA_count').value;
-                    const secA_t = document.getElementById('secA_type').value;
-                    const secB_q = document.getElementById('secB_count').value;
-                    const secB_t = document.getElementById('secB_type').value;
-                    const secC_q = document.getElementById('secC_count').value;
-                    const secC_t = document.getElementById('secC_type').value;
-
-                    finalPrompt = `
-                        Institution: ${title}. 
-                        Subject: ${subject} Grade: ${grade}. 
-                        Topic: ${topic}. 
-                        Context/OCR: ${ocrText}. 
-                        Task: Create a formal examination with the following structure:
-                        - Section A: ${secA_q} items of type ${secA_t}.
-                        - Section B: ${secB_q} items of type ${secB_t}.
-                        - Section C: ${secC_q} items of type ${secC_t}.
-                        In Section C, include the placeholder [IMAGE_HERE] if the description involves diagram analysis.
-                    `;
+                    finalPrompt = `Subject: ${document.getElementById('examSubject').value}. Topic: ${document.getElementById('examTopic').value}. OCR: ${ocrText}. Generate NECTA exam.`;
                 } else if (mode === 'notes') {
-                    const topic = document.getElementById('examTopic')?.value || "General";
-                    finalPrompt = `Topic: ${topic}. Content: ${ocrText || document.getElementById('notesInput').value}. Create very short summary, simple and clear teaching notes. Use <h3> for topics and <ul> for points.`;
+                    finalPrompt = `Create short clear notes for ${document.getElementById('noteLevel').value}. Topic: ${document.getElementById('noteTopic').value}. Subs: ${document.getElementById('noteSubtopics').value}. Reference: ${ocrText}. Use [IMAGE_HERE] tag.`;
                 } else if (mode === 'solve') {
-                    finalPrompt = `Solve clearly: "${ocrText}". Wrap in <div class="solution-box">. Use <b>Step-by-step:</b> list. At the Top list the answers only nested in <ol> </ol> odered list tag, add the step-by-step explaination `;
+                    finalPrompt = `Solve clearly: ${ocrText}.`;
                 }
 
                 const response = await puter.ai.chat(
-                    [{ role: "system", content: systemRole }, { role: "user", content: finalPrompt }],
+                    [{ role: "system", content: "You are W. NO Markdown. Use <h3>, <span class='section-head'>, <ul>, <li>." }, { role: "user", content: finalPrompt }],
                     { model: 'meta-llama/llama-3.1-70b-instruct' }
                 );
                 
                 let aiResponse = response.message.content;
-
                 if (imageData && aiResponse.includes("[IMAGE_HERE]")) {
-                    const imgHtml = `<div class="my-6 border-2 border-black p-2 text-center" contenteditable="false">
-                                        <p class="font-bold italic text-sm mb-2">Study the figure below carefully:</p>
-                                        <img src="${imageData}" class="mx-auto max-h-[400px] border border-slate-300">
-                                     </div>`;
-                    aiResponse = aiResponse.replace("[IMAGE_HERE]", imgHtml);
+                    aiResponse = aiResponse.replace("[IMAGE_HERE]", `<div class="my-6 border p-2 text-center"><img src="${imageData}" class="mx-auto max-h-[400px]"></div>`);
                 }
-
                 loader.classList.add('hidden');
                 output.classList.remove('hidden');
                 output.innerHTML = aiResponse;
-
             } catch (error) {
                 loader.classList.add('hidden');
                 output.classList.remove('hidden');
-                output.innerHTML = `<p style="color:red"><b>SYSTEM ERROR:</b> ${error.message}</p>`;
+                output.innerHTML = `<p class="text-red-600">Error: ${error.message}</p>`;
             }
         }
 
@@ -401,7 +305,7 @@ CRITICAL RULES:
             window.getSelection().removeAllRanges();
             window.getSelection().addRange(range);
             document.execCommand('copy');
-            alert("Copied to clipboard!");
+            alert("Copied!");
         }
     </script>
 </body>
