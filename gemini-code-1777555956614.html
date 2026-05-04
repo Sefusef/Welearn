@@ -341,30 +341,43 @@ async function executeAI(mode) {
             const countB = document.getElementById('secB_count')?.value || 5;
             const countC = document.getElementById('secC_count')?.value || 2;
             
-            finalPrompt = `STRICT TOPIC: ${topic}. 
-            INSTITUTION: ${title}. 
-            LEVEL: ${level}.
-            CONTEXT FROM IMAGES: ${ocrText}.
+            if (mode === 'exam') {
+            const countA = document.getElementById('secA_count')?.value || 10;
+            const countB = document.getElementById('secB_count')?.value || 5;
+            const countC = document.getElementById('secC_count')?.value || 2;
             
-            EXAM STRUCTURE REQUIREMENTS:
-            1. SECTION A: Generate EXACTLY ${countA} Multiple Choice Questions.
-            2. SECTION B: Generate EXACTLY ${countB} Short Answer Questions.
-            3. SECTION C: Generate EXACTLY ${countC} Analytical Questions. 
-            Include [IMAGE_HERE] in Section C. 
-            Follow NECTA standards.`;
+            finalPrompt = `
+            MAIN SUBJECT/TOPIC: ${topic}
+            ACADEMIC LEVEL: ${level}
+            INSTITUTION: ${title}
+
+            PRIMARY INSTRUCTIONS:
+            1. SECTION A: Generate EXACTLY ${countA} Multiple Choice Questions based ONLY on the MAIN SUBJECT/TOPIC (${topic}). Ignore image context for this section.
+            2. SECTION B: Generate EXACTLY ${countB} Short Answer Questions based ONLY on the MAIN SUBJECT/TOPIC (${topic}). Ignore image context for this section.
+            3. SECTION C: Generate EXACTLY ${countC} Analytical Questions. For THIS section only, use the context provided in the image scan below.
+            
+            IMAGE CONTEXT FOR SECTION C: 
+            "${ocrText}"
+
+            FORMATTING:
+            - Place the placeholder [IMAGE_HERE] at the start of Section C.
+            - Follow NECTA standards for language and structure.
+            - Provide the answers for all sections at the very end of the document.`;
 
         } else if (mode === 'notes') {
             const subtopics = document.getElementById('noteSubtopics')?.value || "";
             
-            finalPrompt = `STRICT TOPIC: ${topic}.
-            LEVEL: ${level}.
-            STRICT SUB-TOPICS TO COVER: ${subtopics}.
-            OCR REFERENCE: ${ocrText}.
+            finalPrompt = `
+            GOAL: Create teaching notes.
+            TOPIC: ${topic}
+            LEVEL: ${level}
+            REQUIRED SUB-TOPICS: ${subtopics}
             
-            INSTRUCTIONS: Create notes ONLY for the topic and sub-topics listed above. Do not add outside topics. Use <h3> for headings and <ul> for points. Keep it simple for Tanzanian students.`;
+            SOURCE MATERIAL:
+            - Primary Source: The Topic and Sub-topics provided above.
+            - Supporting Context (from image): ${ocrText}
 
-        } else if (mode === 'solve') {
-            finalPrompt = `Solve clearly: "${ocrText}". Wrap in <div class="solution-box">. List answers first in <ol>, then provide step-by-step explanations.`;
+            INSTRUCTION: Prioritize the Topic and Sub-topics. Use the Supporting Context only to add detail. Use <h3> for headings and <ul> for points. No Markdown.`;
         }
 
         // Using Llama 3.1 70b as it is currently the most stable high-end model on Puter
