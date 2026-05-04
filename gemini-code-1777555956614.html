@@ -198,10 +198,6 @@
             <i class="fas fa-comment-dots text-2xl"></i>
         </button>
     </div>
-
-    <!-- Ensure your file inputs in the HTML look like this to support multiple images:
-<input type="file" id="examImages" multiple accept="image/*"> 
--->
 <script>
 function showScreen(id) {
     const screens = ['home-screen', 'exam-screen', 'notes-screen', 'solve-screen', 'result-screen'];
@@ -241,7 +237,7 @@ async function sendChatMessage() {
     try {
         if (!puter.auth.isSignedIn()) await puter.auth.signIn();
         const response = await puter.ai.chat(
-            [{ role: "system", content: "Your name is W. You are an expert academic assistant for Tanzanian teachers. Provide clear, direct help." }, 
+            [{ role: "system", content: "Your name is W. You are an expert academic assistant for Tanzanian teachers." }, 
              { role: "user", content: msg }],
             { model: 'meta-llama/llama-3.1-70b-instruct' }
         );
@@ -253,7 +249,7 @@ async function sendChatMessage() {
     }
 }
 
-// --- ULTRA-FAST WEBP IMAGE PROCESSING ---
+// --- SPEED-MAXIMIZED WEBP PROCESSING ---
 async function preprocessImages(files) {
     const imgs = await Promise.all(Array.from(files).map(file => 
         new Promise(res => {
@@ -268,7 +264,6 @@ async function preprocessImages(files) {
     ));
 
     const canvas = document.createElement('canvas');
-    // Speed Optimization: Disable alpha channel for faster rendering
     const ctx = canvas.getContext('2d', { alpha: false });
 
     const targetWidth = 1000; 
@@ -277,13 +272,10 @@ async function preprocessImages(files) {
 
     canvas.width = targetWidth;
     canvas.height = totalHeight;
-
-    // Fill background with white (since alpha is disabled)
     ctx.fillStyle = "#FFFFFF";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Sharpening for low-vision text
-    ctx.filter = 'grayscale(100%) contrast(150%) brightness(110%)';
+    ctx.filter = 'grayscale(100%) contrast(160%) brightness(110%)';
     
     let currentY = 0;
     imgs.forEach(img => {
@@ -292,7 +284,6 @@ async function preprocessImages(files) {
         currentY += h;
     });
 
-    // WebP at 0.5 quality is extremely small but maintains sharp text edges for OCR
     return canvas.toDataURL('image/webp', 0.5);
 }
 
@@ -314,48 +305,47 @@ async function executeAI(mode) {
         let fileInput = document.getElementById(mode === 'exam' ? 'examImages' : mode === 'notes' ? 'noteImages' : 'solveImage');
 
         if (fileInput && fileInput.files.length > 0) {
-            statusLabel.innerText = "Encoding to WebP...";
+            statusLabel.innerText = "Encoding WebP...";
             imageData = await preprocessImages(fileInput.files);
             statusLabel.innerText = "Scanning text...";
             const result = await Tesseract.recognize(imageData, 'eng');
             ocrText = result.data.text;
         }
 
-        statusLabel.innerText = "W is generating content...";
+        statusLabel.innerText = "W is structuring content...";
 
-        // --- STRICT DATA CAPTURE ---
+        // Strict input capture
         const topic = document.getElementById('examTopic')?.value || document.getElementById('noteTopic')?.value || "General";
         const title = document.getElementById('examTitle')?.value || "THE UNITED REPUBLIC OF TANZANIA";
-        const level = document.getElementById('examGrade')?.value || document.getElementById('noteLevel')?.value || "Standard";
+        const level = document.getElementById('examLevel')?.value || document.getElementById('noteLevel')?.value || "Form";
 
-        let systemRole = `You are a NECTA Architect. 
-        CRITICAL: You must ONLY use the provided Topic and Sub-topics. 
-        CRITICAL: You must follow the exact question counts requested. 
-        RULES: No Markdown. Use <h3>, <span class="section-head">, <ul>, <li>, and <div class="question-block">.`;
+        let systemRole = `You are a NECTA Examination and Lesson Note Architect.
+CRITICAL RULES:
+1. NEVER use Markdown (no asterisks **, no dashes -, no #). Provide the answers at the end.
+2. For Section Headings, ALWAYS use: <span class="section-head">SECTION A: MULTIPLE CHOICE QUESTIONS</span>.
+3. For Question numbers, use: <div class="question-block"><b>(i)</b> Question text...</div>.
+4. For MCQs, keep options on new lines: <br><b>A.</b> Option <b>B.</b> Option...
+5. Ensure the Section C instruction and the placeholder [IMAGE_HERE] are on separate lines.`;
 
         let finalPrompt = "";
-if (mode === 'exam') {
+        if (mode === 'exam') {
             const countA = document.getElementById('secA_count')?.value || 10;
             const countB = document.getElementById('secB_count')?.value || 5;
-            const countC = document.getElementById('secC_count')?.value || 1;
-            
-            finalPrompt = `
-            TOPIC: ${topic}
-            LEVEL: ${level}
-            INSTITUTION: ${title}
+            const countC = document.getElementById('secC_count')?.value || 2;
 
-            STRUCTURE:
-            - SECTION A: ${countA} Multiple Choice Questions based on ${topic}.
-            - SECTION B: ${countB} Short Answer Questions based on ${topic}.
-            - SECTION C: ${countC} Question(s) based on this text: "${ocrText}". 
-
-            MANDATORY: You MUST start Section C with the exact text: [IMAGE_HERE]
-            
-            Provide answers at the end. No Markdown. Use <b>, <br>, and <div class="question-block">.`;
-
+            finalPrompt = `STRICT TOPIC: ${topic}. LEVEL: ${level}. INSTITUTION: ${title}.
+            TASK: 
+            1. SECTION A: Generate EXACTLY ${countA} MCQs based ONLY on ${topic}.
+            2. SECTION B: Generate EXACTLY ${countB} Short Answers based ONLY on ${topic}.
+            3. SECTION C: Generate EXACTLY ${countC} Questions based ONLY on this image context: "${ocrText}".
+            Requirement: Start Section C with the placeholder [IMAGE_HERE] on its own line.`;
         } else if (mode === 'notes') {
             const subtopics = document.getElementById('noteSubtopics')?.value || "";
-            finalPrompt = `Topic: ${topic}. Level: ${level}. Sub-topics: ${subtopics}. Reference: ${ocrText}. Create teaching notes using <h3> and <ul>. No Markdown.`;
+            finalPrompt = `STRICT TOPIC: ${topic}. LEVEL: ${level}. SUB-TOPICS: ${subtopics}. 
+            CONTEXT: ${ocrText}. 
+            Create teaching notes for the sub-topics. Use <h3> and <ul> only. No Markdown.`;
+        } else if (mode === 'solve') {
+            finalPrompt = `Solve clearly: "${ocrText}". Wrap in <div class="solution-box">. List answers in <ol> then step-by-step.`;
         }
 
         const response = await puter.ai.chat(
@@ -365,16 +355,11 @@ if (mode === 'exam') {
 
         let aiResponse = response.message.content;
 
-        // --- THE FIX: ENSURE IMAGE APPEARS ---
-        // If the AI forgot the tag but we have an image and a Section C, force the tag in.
-        if (imageData) {
-            if (!aiResponse.includes("[IMAGE_HERE]") && aiResponse.includes("SECTION C")) {
-                aiResponse = aiResponse.replace("SECTION C", "SECTION C <br> [IMAGE_HERE]");
-            }
-            
+        // CRITICAL FIX: Ensure image draws in Section C
+        if (imageData && aiResponse.includes("[IMAGE_HERE]")) {
             const imgHtml = `<div class="my-6 border-2 border-black p-2 text-center" contenteditable="false">
                 <p class="font-bold italic text-sm mb-2">Study the figure below carefully:</p>
-                <img src="${imageData}" class="mx-auto max-h-[450px] border border-slate-300">
+                <img src="${imageData}" class="mx-auto max-h-[500px] border border-slate-300">
             </div>`;
             aiResponse = aiResponse.replace("[IMAGE_HERE]", imgHtml);
         }
@@ -383,27 +368,13 @@ if (mode === 'exam') {
         output.classList.remove('hidden');
         output.innerHTML = aiResponse;
 
-        // Using Llama 3.1 70b as it is currently the most stable high-end model on Puter
-        const response = await puter.ai.chat(
-            [{ role: "system", content: systemRole }, { role: "user", content: finalPrompt }],
-            { model: 'meta-llama/llama-3.1-70b-instruct' }
-        );
-
-        let aiResponse = response.message.content;
-
-        if (imageData && aiResponse.includes("[IMAGE_HERE]")) {
-            aiResponse = aiResponse.replace("[IMAGE_HERE]", `<div class="my-6 border-2 border-black p-2 text-center"><img src="${imageData}" class="mx-auto max-h-[500px]"></div>`);
-        }
-
-        loader.classList.add('hidden');
-        output.classList.remove('hidden');
-        output.innerHTML = aiResponse;
-
     } catch (error) {
         loader.classList.add('hidden');
-        output.innerHTML = `<p style="color:red"><b>ERROR:</b> ${error.message}</p>`;
+        output.classList.remove('hidden');
+        output.innerHTML = `<p style="color:red"><b>SYSTEM ERROR:</b> ${error.message}</p>`;
     }
 }
+
 function copyResult() {
     const el = document.getElementById('outputBox');
     const range = document.createRange();
@@ -414,5 +385,6 @@ function copyResult() {
     alert("Copied!");
 }
 </script>
+    
 </body>
 </html>
