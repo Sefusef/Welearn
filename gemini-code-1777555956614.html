@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://js.puter.com/v2/"></script>
-    <script src="https://unpkg.com/tesseract.js@v4.0.1/dist/tesseract.min.js"></script>
+    <script src="https://unpkg.com/tesseract.js@5.1.0/dist/tesseract.min.js"></script>
     <style>
         .hidden { display: none !important; }
         .active-screen { display: block !important; animation: fadeIn 0.4s ease-out; }
@@ -243,7 +243,7 @@ async function sendChatMessage() {
         const response = await puter.ai.chat(
             [{ role: "system", content: "Your name is W. You are an expert academic assistant for Tanzanian teachers. Provide clear, direct help." }, 
              { role: "user", content: msg }],
-            { model: 'meta-llama/llama-3.1-70b-instruct' }
+            { model: 'meta-llama/llama-4-70b-instruct' }
         );
         loader.classList.add('hidden');
         box.innerHTML += `<div class="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] text-sm"><b>W:</b> ${response.message.content}</div>`;
@@ -340,7 +340,11 @@ CRITICAL RULES:
         if (mode === 'exam') {
             finalPrompt = `Subject: ${level}. Institution: ${title}. Topic: ${topic}. Context: ${ocrText}. Task: Create a formal exam with Section A (Multiple Choice), Section B (Short Answers), and Section C (Analysis based on an image). In Section C, include the placeholder [IMAGE_HERE].`;
         } else if (mode === 'notes') {
-            finalPrompt = `Topic: ${topic}. Content: ${ocrText || ""}. Create very short summary notes. Use <h3> and <ul>.`;
+            // UPDATED: Now captures Topic, Level, Sub-topics, and OCR text context
+            const noteLevel = document.getElementById('noteLevel')?.value || "General";
+            const noteSubtopics = document.getElementById('noteSubtopics')?.value || "Standard curriculum";
+            
+            finalPrompt = `Topic: ${topic}. Level: ${noteLevel}. Sub-topics to cover: ${noteSubtopics}. Reference Content: ${ocrText || ""}. Task: Create very short summary, simple and clear teaching notes. Use <h3> for topics and <ul> for points.`;
         } else if (mode === 'solve') {
             finalPrompt = `Solve clearly: "${ocrText}". Wrap in <div class="solution-box">. Use <b>Step-by-step:</b> list. At the Top list the answers only nested in <ol> </ol> odered list tag, add the step-by-step explaination `;
         }
