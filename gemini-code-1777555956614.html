@@ -359,8 +359,7 @@ async function executeAI(mode) {
         let systemRole = `You are a NECTA Examination and Lesson Note Architect. 
 CRITICAL: 
 1. DO NOT use markdown like asterisks or hashtags.
-2. Section Headings MUST be: <span class="section-head">SECTION X: TITLE</span>.
-3. FOR EXAMS: You MUST include the exact tag [IMAGE_HERE] inside <span class="section-head">SECTION C</span> content. This is mandatory for drawing the image.`;
+2. Section Headings MUST be: <span class="section-head">SECTION X: TITLE</span>.`;
 
         let finalPrompt = "";
         if (mode === 'exam') {
@@ -380,12 +379,12 @@ CRITICAL:
 - Section A: ${sA_c} questions (${sA_t}), each question must have ${sA_i} sub-items/parts.
 - Section B: ${sB_c} questions (${sB_t}), each question must have ${sB_i} sub-items/parts.
 - Section C: ${sC_c} questions (${sC_t}), each question must have ${sC_i} sub-items/parts.
-MANDATORY: In Section C, provide questions based on the image provided and write the tag [IMAGE_HERE] exactly where the image should be drawn. Image content info: ${ocrText}`;
+CRITICAL:You MUST include the exact tag [IMAGE_HERE] inside <span class="section-head">SECTION C</span> content. In Section C, provide questions based on the image provided and write the tag [IMAGE_HERE] exactly where the image should be drawn. Image content info: ${ocrText}`;
         } else if (mode === 'notes') {
             const sub = document.getElementById('noteSubtopics').value;
-            finalPrompt = `Generate simple teaching notes for Level: ${level}, Topic: ${topic}. Subtopics: ${sub}. Image Info for reference: ${ocrText}. Use <h3> and <ul> tags. Do NOT use Section C here.`;
+            finalPrompt = `Generate simple teaching notes for Level: ${level}, Topic: ${topic}. Subtopics: ${sub}. Image Info for reference: ${ocrText}. Use <h3> and <ul> tags headings, sub headings and lists. You may use <table></table> only if necessary. Do NOT use Section C here.`;
         } else if (mode === 'solve') {
-            finalPrompt = `Solve clearly: "${ocrText}". Start with answers in an <ol> list, then provide step-by-step logic.`;
+            finalPrompt = `List down the answers only: "${ocrText}".`;
         }
 
         const response = await puter.ai.chat(
