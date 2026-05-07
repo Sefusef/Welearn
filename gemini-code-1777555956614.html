@@ -8,8 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://js.puter.com/v2/"></script>
-    <!-- Tesseract V5 -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <!-- Tesseract Removed as requested to bypass -->
     <style>
         .hidden { display: none !important; }
         .active-screen { display: block !important; animation: fadeIn 0.4s ease-out; }
@@ -274,9 +273,9 @@ async function sendChatMessage() {
     try {
         if (!puter.auth.isSignedIn()) await puter.auth.signIn();
         const response = await puter.ai.chat(
-            [{ role: "system", content: "Your name is W. You are an expert academic assistant for Tanzanian teachers. Provide clear, direct help." }, 
+            [{ role: "system", content: "Your name is W. You are an expert academic assistant for Tanzanian teachers." }, 
              { role: "user", content: msg }],
-            { model: 'meta-llama/llama-3.1-70b-instruct' }
+            { model: 'google/gemini-2.0-flash-001' }
         );
         loader.classList.add('hidden');
         box.innerHTML += `<div class="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] text-sm"><b>W:</b> ${response.message.content}</div>`;
@@ -286,7 +285,6 @@ async function sendChatMessage() {
     }
 }
 
-// --- TASK 2: ENHANCE IMAGE (Blur, Contrast, Light, WebP) ---
 async function preprocessImages(files) {
     const imgs = await Promise.all(Array.from(files).map(file => 
         new Promise(res => {
@@ -302,16 +300,15 @@ async function preprocessImages(files) {
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-
-    const targetWidth = 1000; 
+    const targetWidth = 1600; 
     let totalHeight = 0;
     imgs.forEach(img => totalHeight += targetWidth * (img.height / img.width));
 
     canvas.width = targetWidth;
     canvas.height = totalHeight;
 
-    // TASK 2: Enhancement filters (Blur for smoothing, High Contrast/Light for OCR)
-    ctx.filter = 'contrast(1.5) brightness(1.2) blur(0.2px) grayscale(1)';
+    // Adjusted filters for Gemini Vision (less blur, better clarity)
+    ctx.filter = 'contrast(110%) brightness(105%)';
     
     let currentY = 0;
     imgs.forEach(img => {
@@ -320,8 +317,7 @@ async function preprocessImages(files) {
         currentY += h;
     });
 
-    // Output minimized WebP (quality 0.4)
-    return canvas.toDataURL('image/webp', 0.4);
+    return canvas.toDataURL('image/jpeg', 0.9);
 }
 
 // --- MAIN AI EXECUTION ---
@@ -337,71 +333,77 @@ async function executeAI(mode) {
     try {
         if (!puter.auth.isSignedIn()) await puter.auth.signIn();
 
-        let ocrText = "";
         let imageData = "";
         let fileInput = document.getElementById(mode === 'exam' ? 'examImages' : mode === 'notes' ? 'noteImages' : 'solveImage');
 
         if (fileInput && fileInput.files.length > 0) {
-            statusLabel.innerText = "Enhancing Images to WebP...";
+            statusLabel.innerText = "Processing Image for Gemini...";
             imageData = await preprocessImages(fileInput.files);
-            
-            statusLabel.innerText = "Scanning Text (Tesseract V5)...";
-            const { data: { text } } = await Tesseract.recognize(imageData, 'eng');
-            ocrText = text;
         }
 
-        statusLabel.innerText = "W is generating content...";
+        statusLabel.innerText = "W is analyzing and generating...";
 
         const topic = (mode === 'exam' ? document.getElementById('examTopic')?.value : document.getElementById('noteTopic')?.value) || "General";
-        const title = document.getElementById('examTitle')?.value || "THE UNITED REPUBLIC OF TANZANIA";
         const level = (mode === 'exam' ? document.getElementById('examGrade')?.value : document.getElementById('noteLevel')?.value) || "Form";
+        const subject = document.getElementById('examSubject')?.value || "General";
 
-        let systemRole = `You are a NECTA Examination and Lesson Note Architect. 
+        let systemRole = `You are a NECTA Examination Architect. 
 CRITICAL: 
 1. DO NOT use markdown like asterisks or hashtags.
-2. Section Headings MUST be: <span class="section-head">SECTION X: TITLE</span>.`;
+2. Format your response in html only.
+3. Section Headings MUST be: <span class="section-head">SECTION X: TITLE</span>.`;
 
-        let finalPrompt = "";
+        let userContent = [];
+        let promptText = "";
+
         if (mode === 'exam') {
-            const sA_c = document.getElementById('secA_count').value;
-            const sA_i = document.getElementById('secA_items').value;
-            const sA_t = document.getElementById('secA_type').value;
-            
-            const sB_c = document.getElementById('secB_count').value;
-            const sB_i = document.getElementById('secB_items').value;
-            const sB_t = document.getElementById('secB_type').value;
-            
-            const sC_c = document.getElementById('secC_count').value;
-            const sC_i = document.getElementById('secC_items').value;
-            const sC_t = document.getElementById('secC_type').value;
+            const lowInput = subject.toLowerCase();
+            let sectionA = "- Multiple Choice Questions ( question 1 Items i to xv).\n- Matching: Column A (Premises) vs Column B (Responses). question 2 Items: i to v";
+            let sectionB = "- Fill in the blanks or short answer questions.\n- Re-arrange sentences in a logical sequence.\n- Provide short analytical answers. Question 3 items : i to iii, question 4 items: i to iii, question 5 items: i to ii, question 6 items: i to ii";
+            let sectionC = "- Study the diagram/story/table/map/image and answer related questions. Question 7 items: i to v";
+            let subjectNote = "General NECTA Format.";
 
-            finalPrompt = `Create an exam for ${level}. Topic: ${topic}. 
-- Section A: ${sA_c} questions (${sA_t}), each question must have ${sA_i} sub-items/parts.
-- Section B: ${sB_c} questions (${sB_t}), each question must have ${sB_i} sub-items/parts.
-- Section C: ${sC_c} questions (${sC_t}), each question must have ${sC_i} sub-items/parts.
-CRITICAL:You MUST include the exact tag [IMAGE_HERE] inside <span class="section-head">SECTION C</span> content. In Section C, provide questions based on the image provided and write the tag [IMAGE_HERE] exactly where the image should be drawn. Image content info: ${ocrText}`;
+            if (lowInput.includes("math") || lowInput.includes("hisabati")) {
+                subjectNote = "PRIMARY MATH: NO Multiple Choice.";
+                sectionA = "- Question 1 (items: i to x)Basic Operations (+, -, x, ÷ like'1245+2364=' ) no words like 'perfom addition of.... etc'.";
+                sectionB = "- Fractions, Decimals,percentages,roman numbers,metric units, time, statistics and algebra (word problems only). Question 2: items:i to vi.\n question 3 items: i to iii.\n question 4 items: i to iii.\n question 5 items: i to iii.\n question 6 items: i to iii.";
+                sectionC = "- Geometry (Area/Perimeter) and Data Interpretation from provided images. question 7 items: i to iii.\n question 8 items: i to ii.";
+            } else if (lowInput.includes("english") || lowInput.includes("kiswahili")) {
+                subjectNote = "PRIMARY LANGUAGE.";
+                sectionA = "- Question 1: Dictation/ imla/ listening skill (answering items by listening to a story read by the invigilator)make sure you give multiple choice items in this section and a passage for the invilator at the end of the examination if you chose listening skills. also if is dictation give the sentences at the end of the examination (items: i to v).\n- Question 2: Grammar & Vocabulary. multiple choice items: i to v.\n question 3 choose a correct word from the box items: i to v.\n question 4 matching column A (premeses) vs column B (responses) items: i to v.";
+                sectionB = "_ Question 5 choose the verb in the correct form items: i to v. \n question 6 comprehension ( read the passage then answer questions) items: i to v.";
+                sectionC = "- Functional Writing (Letter/Form) and Comprehension analysis. question 7 rearrenge sentences in chronological order, items: i to vi";
+            }
+
+            promptText = `Act as a NECTA Senior Examiner. Using these details: Topic: ${topic}, Grade: ${level}, Subject: ${subject}\n\nCORE REQUIREMENT: ${subjectNote}\n\nSTRUCTURE THE EXAM AS FOLLOWS:\n\nAvoid direct recall; questions should start with a scenario/case study if applicable (avoid direct or open questions except for mathematics).\n\nSECTION A:\n${sectionA}\n\nSECTION B:\n${sectionB}\n\nSECTION C:\n${sectionC}\n\nMARKING SCHEME: Include a detailed Marking Scheme at the end with specific points for each answer.\n\nIMPORTANT: Use Tanzanian English/Kiswahili terms. PLAIN TEXT ONLY. NO MARKDOWN (no **, ##, or *).`;
         } else if (mode === 'notes') {
             const sub = document.getElementById('noteSubtopics').value;
-            finalPrompt = `Generate simple teaching notes for Level: ${level}, Topic: ${topic}. Subtopics: ${sub}. Image Info for reference: ${ocrText}. Use <h3> and <ul> tags headings, sub headings and lists. You may use <table></table> only if necessary. Do NOT use Section C here.`;
+            promptText = `Generate a short, simple and clear notes. Organise it in form of topic, subtopic, meaning and points by using html. use doted lists <ul></ul> for points and tables <table></table> where useful. Context: Level: ${level}, Topic: ${topic}, Sub-topics: ${sub}. Use <h3> and <ul> tags. Refer to images if provided.`;
         } else if (mode === 'solve') {
-            finalPrompt = `List down the answers only: "${ocrText}".`;
+            promptText = `Give the answers of all questions from these images?`;
+        }
+
+        // Gemini Vision Payload: Combine text and image
+        userContent.push({ type: "text", text: promptText });
+        if (imageData) {
+            userContent.push({ type: "image_url", image_url: { url: imageData } });
         }
 
         const response = await puter.ai.chat(
-            [{ role: "system", content: systemRole }, { role: "user", content: finalPrompt }],
-            { model: 'meta-llama/llama-3.1-70b-instruct' }
+            [{ role: "system", content: systemRole }, { role: "user", content: userContent }],
+            { model: 'google/gemini-2.5-flash' }
         );
 
         let aiResponse = response.message.content;
-        const imgHtml = `<div class="my-6 border-2 border-black p-2 text-center" contenteditable="false"><p class="text-xs uppercase font-bold">Figure/Source Material</p><img src="${imageData}" class="mx-auto max-h-[450px]"></div>`;
+        const imgHtml = imageData ? `<div class="my-6 border-2 border-black p-2 text-center" contenteditable="false"><img src="${imageData}" class="mx-auto max-h-[450px]"></div>` : "";
 
         if (imageData) {
             if (aiResponse.includes("[IMAGE_HERE]")) {
                 aiResponse = aiResponse.replace("[IMAGE_HERE]", imgHtml);
             } else if (mode === 'exam' && aiResponse.includes("SECTION C")) {
                 aiResponse = aiResponse.replace(/(SECTION C:.*?)(\n|$)/i, `$1<br>${imgHtml}<br>`);
-            } else if (mode === 'notes') {
-                aiResponse += `<hr class="my-8"><p class="font-bold">Additional Reference:</p>${imgHtml}`;
+            } else {
+                aiResponse += `<hr class="my-8">${imgHtml}`;
             }
         }
 
