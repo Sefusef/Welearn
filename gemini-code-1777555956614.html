@@ -380,7 +380,7 @@ CRITICAL:
             const sub = document.getElementById('noteSubtopics').value;
             promptText = `Generate a short, simple and clear notes. Organise it in form of topic, subtopic, meaning and points by using html. use doted lists <ul></ul> for points and tables <table></table> where useful. Context: Level: ${level}, Topic: ${topic}, Sub-topics: ${sub}. Use <h3> and <ul> tags. Refer to images if provided.`;
         } else if (mode === 'solve') {
-            promptText = `Give the answers of all questions from these images. DO NOT mention the questions except for mathematics, only write the question number and its answer. Use <ol></ol> tag, and <table></table> tag wherever applicable.`;
+            promptText = `Solve all questions from the images and give answers only. Use <ol></ol> tag, and <table></table> tag wherever applicable.`;
         }
 
         // Gemini Vision Payload: Combine text and image
