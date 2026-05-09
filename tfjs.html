@@ -3,257 +3,389 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>T5-Small Local Quiz Generator</title>
-    
+    <title>Wonderz Learn | AI Academic Suite</title>
+    <!-- Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://js.puter.com/v2/"></script>
+    <!-- Tesseract Removed as requested to bypass -->
     <style>
-        /* Custom styles for better aesthetics */
-        body { font-family: 'Inter', sans-serif; background-color: #f7f9fc; }
-        .card { box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); }
-        .loader { border-top-color: #3b82f6; -webkit-animation: spin 1s linear infinite; animation: spin 1s linear infinite; }
-        @-webkit-keyframes spin { 0% { -webkit-transform: rotate(0deg); } 100% { -webkit-transform: rotate(360deg); } }
+        .hidden { display: none !important; }
+        .active-screen { display: block !important; animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .loader { border-top-color: #2563eb; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .prose-output { 
+            font-family: 'Times New Roman', Times, serif; 
+            line-height: 1.6; 
+            color: #111;
+            outline: none;
+            min-height: 500px;
+        }
+        .prose-output:focus {
+            background-color: #fffdf5;
+            border: 1px dashed #2563eb;
+        }
+
+        .exam-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 20px; padding-bottom: 10px; }
+        .section-head { font-weight: bold; text-decoration: underline; margin-top: 25px; display: block; text-transform: uppercase; }
+        .question-block { margin-bottom: 15px; padding-left: 5px; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; border: 1px solid black; }
+        th, td { border: 1px solid black; padding: 8px; vertical-align: top; }
+        
+        @page { size: A4; margin: 15mm; }
+
+        @media print {
+            nav, .no-print, .instructions-tag, button, #home-screen, #exam-screen, #notes-screen, #solve-screen, #chat-widget { 
+                display: none !important; 
+            }
+            body { background: white !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact; }
+            .container { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; border: none !important; }
+            #result-screen { display: block !important; padding: 0 !important; margin: 0 !important; }
+            .prose-output { border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; font-size: 12pt; }
+        }
+
+        #chat-widget { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
+        #chat-window { 
+            width: 350px; 
+            height: 480px; 
+            max-height: 80vh;
+            flex-direction: column; 
+            display: none;
+        }
+        #chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+        #chat-messages::-webkit-scrollbar { width: 5px; }
+        #chat-messages::-webkit-scrollbar-track { background: transparent; }
+        #chat-messages::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
-    
-    <script type="module">
-        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.0';
-        window.pipeline = pipeline;
-        // --- Local Model Path ---
-        window.MODEL_NAME = 'Xenova/t5-small'; 
-    </script>
 </head>
-<body class="p-4 md:p-8 min-h-screen flex flex-col items-center">
+<body class="bg-slate-50 text-slate-900 min-h-screen">
 
-    <div class="w-full max-w-4xl">
-        <h1 class="text-4xl font-extrabold text-gray-900 mb-2 text-center">In-Browser Quiz Generator</h1>
-        <p class="text-center text-gray-600 mb-8">Model: **T5-Small** ($\sim$60MB), loaded locally for maximum reliability.</p>
-    </div>
-
-    <div class="w-full max-w-4xl bg-white p-6 md:p-10 rounded-xl card mb-8">
-        <label for="context-input" class="block text-lg font-semibold text-gray-700 mb-3">1. Enter Passage (Context):</label>
-        <textarea id="context-input" rows="8" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150" placeholder="Paste a Wikipedia article, a chapter summary, or any educational text here."></textarea>
-
-        <div class="flex justify-end mt-6">
-            <button id="generate-button" class="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300 active:bg-blue-800 flex items-center disabled:opacity-50" onclick="generateQuiz()">
-                <svg id="generate-icon" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                <div id="button-text">Generate Quiz</div>
-                <div id="loader" class="loader w-5 h-5 border-4 border-gray-100 rounded-full hidden ml-2"></div>
+    <!-- NAVIGATION -->
+    <nav class="bg-blue-700 p-4 shadow-xl text-white sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-black tracking-tighter cursor-pointer flex items-center" onclick="showScreen('home-screen')">
+                <i class="fas fa-graduation-cap mr-3 text-yellow-400"></i>Teacher W
+            </h1>
+            <button onclick="showScreen('home-screen')" class="bg-blue-800 hover:bg-blue-600 px-5 py-2 rounded-full transition-all font-bold shadow-md">
+                <i class="fas fa-home mr-2"></i>Dashboard
             </button>
         </div>
-    </div>
+    </nav>
 
-    <div id="quiz-output" class="w-full max-w-4xl bg-white p-6 md:p-10 rounded-xl card hidden">
-        <h2 class="text-3xl font-bold text-gray-900 mb-6 border-b pb-2">2. Generated Quiz (True/False)</h2>
-        <div id="quiz-questions">
-            </div>
-    </div>
-
-    <div id="model-loading" class="w-full max-w-4xl bg-yellow-50 p-6 md:p-10 rounded-xl card flex flex-col items-center justify-center text-center">
-        <div class="loader w-12 h-12 border-8 border-yellow-200 rounded-full mb-4"></div>
-        <p class="text-xl font-semibold text-yellow-800">Initializing AI Model...</p>
-        <p class="text-sm text-yellow-700 mt-2">Loading model files from local repository. This should be fast!</p>
-    </div>
-
-
-    <script>
-        const contextInput = document.getElementById('context-input');
-        const generateButton = document.getElementById('generate-button');
-        const buttonText = document.getElementById('button-text');
-        const loader = document.getElementById('loader');
-        const quizOutput = document.getElementById('quiz-output');
-        const quizQuestions = document.getElementById('quiz-questions');
-        const modelLoadingIndicator = document.getElementById('model-loading'); 
-
-        contextInput.value = `The planet Mars is often called the Red Planet because of its reddish appearance, which is caused by iron oxide, or rust, on its surface. It is the fourth planet from the Sun and the second smallest in the Solar System after Mercury. Mars is a terrestrial planet with a thin atmosphere. Its notable features include Olympus Mons, the largest volcano and highest known mountain in the Solar System, and Valles Marineris, one of the largest canyon systems.`;
-
-        let summarizationPipeline = null;
-        let isProcessing = true; 
-
-        async function initializeModel() {
-            try {
-                modelLoadingIndicator.classList.remove('hidden');
-                
-                // --- Using LOCAL_MODEL_PATH and Compatibility Fixes ---
-                summarizationPipeline = await pipeline(
-                    'summarization', 
-                    window.LOCAL_MODEL_PATH, // <-- Uses the local path /models/t5-small
-                    { 
-                        device: 'cpu', 
-                        sessionOptions: {
-                            executionProviders: ['wasm'], 
-                            graphOptimizationLevel: 'all',
-                        }
-                    } 
-                );
-                
-                console.log("Model initialized successfully from local assets.");
-                isProcessing = false;
-                modelLoadingIndicator.classList.add('hidden');
-                setUIState(false);
-                
-            } catch (error) {
-                console.error("Failed to load model:", error);
-                // Prompt user to check setup instructions if load fails
-                showNotification(`CRITICAL ERROR: Failed to load model. Did you set up the '/models/t5-small' folder correctly? Check console (F12).`, 'red');
-                isProcessing = false;
-                modelLoadingIndicator.classList.add('hidden');
-                setUIState(false);
-            }
-        }
-
-        const debouncedInitialize = (function() {
-            let timeout;
-            return function(func, delay) {
-                clearTimeout(timeout);
-                timeout = setTimeout(func, delay);
-            };
-        })();
-
-        window.onload = () => {
-             setUIState(true); 
-             debouncedInitialize(initializeModel, 100);
-        };
+    <!-- 1. HOME SCREEN -->
+    <section id="home-screen" class="container mx-auto p-8 text-center mt-10 active-screen">
+        <h2 class="text-4xl font-black mb-4 text-slate-800 uppercase tracking-tight">Academic AI Suite</h2>
+        <p class="text-slate-500 mb-12 text-lg max-w-2xl mx-auto">Professional tools for Tanzanian Educators. Generate exams, create notes, and solve questions instantly with **W**.</p>
         
-
-        function setUIState(processing) {
-            isProcessing = processing;
-            const canGenerate = summarizationPipeline !== null && !processing; 
-
-            generateButton.disabled = !canGenerate || !contextInput.value.trim();
-            loader.classList.toggle('hidden', !processing);
-            buttonText.textContent = processing ? (summarizationPipeline ? 'Analyzing...' : 'Loading...') : 'Generate Quiz';
-            
-            generateButton.classList.toggle('bg-blue-600', canGenerate);
-            generateButton.classList.toggle('bg-gray-500', !canGenerate);
-            generateButton.classList.toggle('hover:bg-blue-700', canGenerate);
-        }
-
-        function showNotification(message, color) {
-            const notification = document.createElement('div');
-            notification.className = `p-4 mb-4 text-sm rounded-xl text-white font-medium shadow-md ${color === 'red' ? 'bg-red-500' : 'bg-green-500'}`;
-            notification.textContent = message;
-            
-            const parent = quizOutput.parentElement;
-            parent.insertBefore(notification, quizOutput);
-            
-            setTimeout(() => {
-                notification.remove();
-            }, 5000);
-        }
-
-        function createQuizItem(index, statement, isTrue) {
-            const statementHtml = isTrue 
-                ? statement 
-                : generateFalseStatement(statement); 
-
-            return `
-                <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                    <p class="font-semibold text-gray-800 mb-3 flex items-start">
-                        <span class="text-lg mr-3 text-blue-600">${index}.</span>
-                        ${statementHtml}
-                    </p>
-                    <div class="flex space-x-4">
-                        <label class="inline-flex items-center text-gray-600 cursor-pointer hover:text-gray-900 transition">
-                            <input type="radio" name="q${index}" value="true" class="form-radio h-4 w-4 text-blue-600" disabled>
-                            <span class="ml-2">True</span>
-                        </label>
-                        <label class="inline-flex items-center text-gray-600 cursor-pointer hover:text-gray-900 transition">
-                            <input type="radio" name="q${index}" value="false" class="form-radio h-4 w-4 text-blue-600" disabled>
-                            <span class="ml-2">False</span>
-                        </label>
-                    </div>
-                    <p class="mt-2 text-sm text-gray-500">
-                        <span class="font-bold">Correct Answer:</span> 
-                        <span class="${isTrue ? 'text-green-600' : 'text-red-600'}">${isTrue ? 'True' : 'False'}</span>
-                    </p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div onclick="showScreen('exam-screen')" class="bg-white p-10 rounded-3xl shadow-sm hover:shadow-2xl transition-all border-b-8 border-blue-600 cursor-pointer group">
+                <div class="w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-blue-600 transition-colors">
+                    <i class="fas fa-file-signature text-4xl text-blue-600 group-hover:text-white"></i>
                 </div>
-            `;
-        }
+                <h3 class="text-2xl font-black">Exam Generator</h3>
+                <p class="text-slate-500 mt-3 text-sm">Create NECTA-standard papers with automated Section A, B, and C structures.</p>
+            </div>
+            <div onclick="showScreen('notes-screen')" class="bg-white p-10 rounded-3xl shadow-sm hover:shadow-2xl transition-all border-b-8 border-emerald-600 cursor-pointer group">
+                <div class="w-20 h-20 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-emerald-600 transition-colors">
+                    <i class="fas fa-book-open text-4xl text-emerald-600 group-hover:text-white"></i>
+                </div>
+                <h3 class="text-2xl font-black">Notes Creator</h3>
+                <p class="text-slate-500 mt-3 text-sm">Generate structured, simple, and clear teaching notes for any level.</p>
+            </div>
+            <div onclick="showScreen('solve-screen')" class="bg-white p-10 rounded-3xl shadow-sm hover:shadow-2xl transition-all border-b-8 border-purple-600 cursor-pointer group">
+                <div class="w-20 h-20 bg-purple-50 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-purple-600 transition-colors">
+                    <i class="fas fa-brain text-4xl text-purple-600 group-hover:text-white"></i>
+                </div>
+                <h3 class="text-2xl font-black">Smart Solver</h3>
+                <p class="text-slate-500 mt-3 text-sm">Snap a photo of any exam question to get step-by-step explained solutions.</p>
+            </div>
+        </div>
+    </section>
 
-        function generateFalseStatement(trueStatement) {
-            const replacements = {
-                'is the largest': 'is one of the smallest',
-                'is a': 'is not a',
-                'includes': 'excludes',
-                'are also similar to': 'are very different from',
-                'fourth planet': 'third planet',
-                'second smallest': 'largest',
-                'its reddish appearance': 'its greenish appearance',
-                'caused by iron oxide': 'caused by methane gas'
+    <!-- 2. EXAM GENERATOR SCREEN -->
+    <section id="exam-screen" class="hidden container mx-auto p-6 max-w-4xl">
+        <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+            <div class="bg-blue-700 p-6 text-white font-bold text-xl uppercase tracking-widest flex items-center">
+                <i class="fas fa-plus-circle mr-3"></i> Create New Examination
+            </div>
+            <form id="examForm" class="p-8 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div><label class="block text-xs font-black uppercase text-slate-400 mb-2">Institution/Title</label><input type="text" id="examTitle" placeholder="e.g. NECTA" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition"></div>
+                    <div><label class="block text-xs font-black uppercase text-slate-400 mb-2">Subject</label><input type="text" id="examSubject" placeholder="e.g. History" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition"></div>
+                    <div><label class="block text-xs font-black uppercase text-slate-400 mb-2">Grade</label><input type="text" id="examGrade" placeholder="e.g. Form 2" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition"></div>
+                </div>
+                <div><label class="block text-xs font-black uppercase text-slate-400 mb-2">Topic</label><input type="text" id="examTopic" placeholder="Topic Name" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition"></div>
+                
+                <div class="bg-blue-50 p-6 rounded-2xl border-2 border-dashed border-blue-200 text-center">
+                    <p class="text-xs font-bold text-blue-400 mb-2 uppercase">Optional: Upload source material/images</p>
+                    <input type="file" id="examImages" multiple accept="image/*">
+                </div>
+
+                <button type="button" onclick="executeAI('exam')" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl hover:bg-blue-800 transition shadow-lg">GENERATE WITH W</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- 3. NOTES CREATOR SCREEN -->
+    <section id="notes-screen" class="hidden container mx-auto p-6 max-w-4xl">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 border border-slate-200">
+            <h2 class="text-3xl font-black mb-6 text-emerald-700 uppercase"><i class="fas fa-edit mr-3"></i>AI Lesson Note Creator</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div><label class="block text-xs font-black uppercase text-slate-400 mb-2">Main Topic</label><input type="text" id="noteTopic" placeholder="Main Topic" class="w-full border-2 p-3 rounded-xl outline-none focus:border-emerald-500 transition"></div>
+                <div><label class="block text-xs font-black uppercase text-slate-400 mb-2">Class Level</label><input type="text" id="noteLevel" placeholder="e.g. Form 1" class="w-full border-2 p-3 rounded-xl outline-none focus:border-emerald-500 transition"></div>
+            </div>
+            <div class="mb-6"><label class="block text-xs font-black uppercase text-slate-400 mb-2">Sub-topics</label><textarea id="noteSubtopics" placeholder="Comma separated subtopics" class="w-full h-24 border-2 p-3 rounded-xl outline-none focus:border-emerald-500 transition"></textarea></div>
+            <div class="bg-emerald-50 p-6 rounded-2xl border-2 border-dashed border-emerald-200 mb-6"><input type="file" id="noteImages" multiple accept="image/*"></div>
+            <button onclick="executeAI('notes')" class="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl hover:bg-emerald-800 transition">GENERATE NOTES WITH W</button>
+        </div>
+    </section>
+
+    <!-- 4. SOLVE SCREEN -->
+    <section id="solve-screen" class="hidden container mx-auto p-6 max-w-4xl">
+        <div class="bg-white rounded-3xl shadow-2xl p-10 border border-slate-200 text-center">
+            <h2 class="text-3xl font-black mb-6 text-purple-700 uppercase">Intelligent Solver</h2>
+            <div class="p-10 border-4 border-dashed border-purple-100 rounded-3xl mb-6 bg-purple-50"><input type="file" id="solveImage" class="mx-auto" multiple accept="image/*"></div>
+            <button onclick="executeAI('solve')" class="w-full bg-purple-600 text-white font-black py-4 rounded-2xl hover:bg-purple-800 transition">SOLVE WITH W</button>
+        </div>
+    </section>
+
+    <!-- 5. RESULTS SCREEN -->
+    <section id="result-screen" class="hidden container mx-auto p-6 max-w-5xl mb-20">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 border border-blue-100">
+            <div class="flex justify-between items-center mb-6 border-b pb-4 no-print">
+                <h2 class="text-2xl font-black text-blue-900 tracking-tight">AI GENERATED RESULT</h2>
+                <div class="flex space-x-3">
+                    <button onclick="copyResult()" class="bg-slate-100 p-2 px-6 rounded-xl font-bold">Copy</button>
+                    <button onclick="window.print()" class="bg-blue-600 text-white p-2 px-6 rounded-xl font-bold">Save PDF</button>
+                </div>
+            </div>
+            <div id="loaderDisplay" class="hidden flex flex-col items-center justify-center p-20">
+                <div class="loader rounded-full border-4 border-t-4 border-slate-200 h-16 w-16 mb-6"></div>
+                <p id="statusLabel" class="text-blue-600 font-black animate-pulse uppercase">W IS THINKING...</p>
+            </div>
+            <div id="outputBox" contenteditable="true" class="prose-output text-lg p-8 bg-white text-slate-800"></div>
+        </div>
+    </section>
+
+    <!-- FLOATING CHAT BUTTON -->
+    <div id="chat-widget" class="no-print">
+        <div id="chat-window" class="bg-white shadow-2xl rounded-2xl border border-slate-200 mb-4 overflow-hidden flex flex-col">
+            <div class="bg-blue-700 p-4 text-white font-bold flex justify-between items-center">
+                <span><i class="fas fa-robot mr-2"></i> W - Assistant</span>
+                <button onclick="toggleChat()"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="chat-messages" class="p-4 space-y-3 bg-slate-50">
+                <div class="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%]">Hello! I am **W**, your academic assistant. How can I help you today?</div>
+            </div>
+            <div id="chat-loader" class="hidden px-4 py-2 text-xs text-blue-600 italic animate-pulse">W is typing...</div>
+            <div class="p-3 bg-white border-t flex gap-2">
+                <input type="text" id="chat-input" placeholder="Type message to W..." class="flex-1 border rounded-full px-4 py-2 outline-none text-sm focus:border-blue-500" onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                <button onclick="sendChatMessage()" class="bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-700"><i class="fas fa-paper-plane text-sm"></i></button>
+            </div>
+        </div>
+        <button onclick="toggleChat()" class="bg-blue-600 text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center hover:bg-blue-700 transition-all transform hover:scale-110">
+            <i class="fas fa-comment-dots text-2xl"></i>
+        </button>
+    </div>
+
+<script>
+function showScreen(id) {
+    const screens = ['home-screen', 'exam-screen', 'notes-screen', 'solve-screen', 'result-screen'];
+    screens.forEach(s => {
+        const el = document.getElementById(s);
+        if(el) el.classList.add('hidden');
+        if(el) el.classList.remove('active-screen');
+    });
+    const target = document.getElementById(id);
+    if(target) {
+        target.classList.remove('hidden');
+        target.classList.add('active-screen');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleChat() {
+    const win = document.getElementById('chat-window');
+    const isHidden = win.style.display === 'none' || win.style.display === '';
+    win.style.display = isHidden ? 'flex' : 'none';
+    if(isHidden) document.getElementById('chat-input').focus();
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const box = document.getElementById('chat-messages');
+    const loader = document.getElementById('chat-loader');
+    const msg = input.value.trim();
+    if(!msg) return;
+
+    box.innerHTML += `<div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none shadow-md max-w-[85%] self-end ml-auto text-sm">${msg}</div>`;
+    input.value = '';
+    box.scrollTop = box.scrollHeight;
+    loader.classList.remove('hidden');
+
+    try {
+        if (!puter.auth.isSignedIn()) await puter.auth.signIn();
+        const response = await puter.ai.chat(
+            [{ role: "system", content: "Your name is W. You are an expert academic assistant for Tanzanian teachers." }, 
+             { role: "user", content: msg }],
+            { model: 'google/gemini-3.0-flash-preview' }
+        );
+        loader.classList.add('hidden');
+        box.innerHTML += `<div class="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] text-sm"><b>W:</b> ${response.message.content}</div>`;
+        box.scrollTop = box.scrollHeight;
+    } catch(e) {
+        loader.classList.add('hidden');
+    }
+}
+
+async function preprocessImages(files) {
+    const imgs = await Promise.all(Array.from(files).map(file => 
+        new Promise(res => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image();
+                img.onload = () => res(img);
+                img.src = e.target.result;
             };
+            reader.readAsDataURL(file);
+        })
+    ));
 
-            let falseStatement = trueStatement;
-            let replaced = false;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const targetWidth = 1200; 
+    let totalHeight = 0;
+    imgs.forEach(img => totalHeight += targetWidth * (img.height / img.width));
 
-            for (const key in replacements) {
-                if (trueStatement.includes(key)) {
-                    falseStatement = trueStatement.replace(key, replacements[key]);
-                    replaced = true;
-                    break;
-                }
-            }
+    canvas.width = targetWidth;
+    canvas.height = totalHeight;
 
-            if (!replaced) {
-                return falseStatement.replace('Mars', 'Jupiter');
-            }
-            return falseStatement;
+    ctx.filter = 'contrast(110%) brightness(105%)';
+    
+    let currentY = 0;
+    imgs.forEach(img => {
+        const h = targetWidth * (img.height / img.width);
+        ctx.drawImage(img, 0, currentY, targetWidth, h);
+        currentY += h;
+    });
+
+    return canvas.toDataURL('image/jpeg', 0.9);
+}
+
+// --- MAIN AI EXECUTION ---
+async function executeAI(mode) {
+    const output = document.getElementById('outputBox');
+    const loader = document.getElementById('loaderDisplay');
+    const statusLabel = document.getElementById('statusLabel');
+
+    showScreen('result-screen');
+    output.classList.add('hidden');
+    loader.classList.remove('hidden');
+
+    try {
+        if (!puter.auth.isSignedIn()) await puter.auth.signIn();
+
+        let imageData = "";
+        let fileInput = document.getElementById(mode === 'exam' ? 'examImages' : mode === 'notes' ? 'noteImages' : 'solveImage');
+
+        if (fileInput && fileInput.files.length > 0) {
+            statusLabel.innerText = "Processing Image for Gemini...";
+            imageData = await preprocessImages(fileInput.files);
         }
 
-        async function generateQuiz() {
-            if (isProcessing || summarizationPipeline === null) return;
+        statusLabel.innerText = "W is analyzing and generating...";
 
-            const context = contextInput.value.trim();
-            if (context.length < 50) {
-                showNotification('Please enter a longer passage (at least 50 characters) to generate facts.', 'red');
-                return;
+        const topic = (mode === 'exam' ? document.getElementById('examTopic')?.value : document.getElementById('noteTopic')?.value) || "General";
+        const level = (mode === 'exam' ? document.getElementById('examGrade')?.value : document.getElementById('noteLevel')?.value) || "Form";
+        const subject = document.getElementById('examSubject')?.value || "General";
+
+        let systemRole = `You are an Examination Architect. 
+CRITICAL: 
+1. DO NOT use markdown like asterisks or hashtags.
+2. Format your response as normal examination paper using html and css only.
+3. Section Headings MUST be: <span class="section-head">SECTION X: TITLE</span>.
+4. Always give response in English except if the subject is in Kiswahili like hisabati, jiografia etc`;
+
+        let userContent = [];
+        let promptText = "";
+
+        if (mode === 'exam') {
+            const lowInput = subject.toLowerCase();
+            let sectionA = "- Multiple Choice Questions ( question 1 Items i to xv).\n- Matching: Column A (Premises) vs Column B (Responses). question 2 Items: i to v";
+            let sectionB = "- Fill in the blanks or short answer questions or Re-arrange sentences in a logical sequence or Provide short analytical answers. Question 3 items : i to iii, question 4 items: i to iii, question 5 items: i to ii, question 6 items: i to ii";
+            let sectionC = "- Study the diagram/story/table/map/image and answer related questions. Question 7 items: i to v";
+            let subjectNote = "General NECTA Format.";
+
+            if (lowInput.includes("math") || lowInput.includes("hisabati")) {
+                subjectNote = "PRIMARY MATH: NO Multiple Choice.";
+                sectionA = "- Question 1 (items: i to x)Basic Operations (+, -, x, ÷ like'1245+2364=' ) no words like 'perfom addition of.... etc'.";
+                sectionB = "- Fractions, Decimals,percentages,roman numbers,metric units, time, statistics and algebra (word problems only). Question 2: items:i to vi.\n question 3 items: i to iii.\n question 4 items: i to iii.\n question 5 items: i to iii.\n question 6 items: i to iii.";
+                sectionC = "- Geometry (Area/Perimeter) and Data Interpretation from provided images. question 7 items: i to iii.\n question 8 items: i to ii.\n draw the shapes by using <svg> tags";
+            } else if (lowInput.includes("english") || lowInput.includes("kiswahili")) {
+                subjectNote = "PRIMARY LANGUAGE.";
+                sectionA = "- Question 1: Dictation/ imla/ listening skill (answering items by listening to a story read by the invigilator)make sure you give multiple choice items in this section and a passage for the invilator at the end of the examination if you chose listening skills. also if is dictation give the sentences at the end of the examination (items: i to v).\n- Question 2: Grammar & Vocabulary. multiple choice items: i to v.\n question 3 choose a correct word from the box items: i to v.\n question 4 matching column A (premeses) vs column B (responses) items: i to v.";
+                sectionB = "_ Question 5 choose the verb in the correct form items: i to v. \n question 6 comprehension ( read the passage then answer questions) items: i to v.";
+                sectionC = "- Functional Writing (Letter/Form) and Comprehension analysis. question 7 rearrenge sentences in chronological order, items: i to vi";
             }
 
-            setUIState(true);
-            quizQuestions.innerHTML = '';
-            quizOutput.classList.add('hidden');
+            promptText = `Act as a Senior Examiner. Using these details: Topic: ${topic}, Grade: ${level}, Subject: ${subject}\n\nCORE REQUIREMENT: ${subjectNote}\n\nSTRUCTURE THE EXAM AS FOLLOWS:\n\nAvoid direct recall; questions should start with a scenario/case study if applicable (avoid direct or open questions except for mathematics).\n\nSECTION A:\n${sectionA}\n\nSECTION B:\n${sectionB}\n\nSECTION C:\n${sectionC}\n\nMARKING SCHEME: Include a detailed Marking Scheme at the end with specific points for each answer.\n\nIMPORTANT: Always Use Tanzanian English,only use Kiswahili if the suject is in kiswahili like hisabati or jiografia etc. PLAIN TEXT ONLY. NO MARKDOWN (no **, ##, or *).`;
+        } else if (mode === 'notes') {
+            const sub = document.getElementById('noteSubtopics').value;
+            promptText = `Generate a short, simple and clear notes. Organise it in form of topic, subtopic, meaning and points by using html. use doted lists <ul></ul> for points and tables <table></table> where useful. Context: Level: ${level}, Topic: ${topic}, Sub-topics: ${sub}. Use <h3> and <ul> tags. Refer to images if provided.`;
+        } else if (mode === 'solve') {
+            promptText = `Solve all questions from the images. Use <ol></ol> tag, and <table></table> tag wherever applicable.`;
+        }
 
-            try {
-                // 1. Generate Summary/Facts using the ML model
-                // T5 model requires the 'summarize:' prefix
-                const summary = await summarizationPipeline(`summarize: ${context}`, {
-                    min_length: 50,
-                    max_length: 200, 
-                    // --- FIX: Added for Diversity ---
-                    do_sample: true,          // Enables random sampling
-                    repetition_penalty: 2.0,  // Strongly discourages repeating phrases/tokens
-                    // --------------------------------
-                });
+        userContent.push({ type: "text", text: promptText });
+        if (imageData) {
+            userContent.push({ type: "image_url", image_url: { url: imageData } });
+        }
 
-                const summaryText = summary[0].summary_text;
-                const facts = summaryText.match(/[^.!?]+[.!?]/g) || [summaryText];
-                const usableFacts = facts.filter(fact => fact.trim().length > 15).slice(0, 5); 
+        const response = await puter.ai.chat(
+            [{ role: "system", content: systemRole }, { role: "user", content: userContent }],
+            { model: 'google/gemini-2.5-flash' }
+        );
 
-                if (usableFacts.length < 1) {
-                    showNotification('Model could not extract clear facts. Try a different passage.', 'red');
-                    return;
-                }
+        let aiResponse = response.message.content;
+        const imgHtml = imageData ? `<div class="my-6 border-2 border-black p-2 text-center" contenteditable="false"><img src="${imageData}" class="mx-auto max-h-[450px]"></div>` : "";
 
-                // 2. Create Quiz Items (interleaving True and False questions)
-                let quizHTML = '';
-                for (let i = 0; i < usableFacts.length; i++) {
-                    const fact = usableFacts[i].trim();
-                    const isTrue = i % 2 === 0; 
-                    quizHTML += createQuizItem(i + 1, fact, isTrue);
-                }
-
-                // 3. Render the Quiz
-                quizQuestions.innerHTML = quizHTML;
-                quizOutput.classList.remove('hidden');
-                showNotification(`Quiz generated successfully from ${usableFacts.length} facts!`, 'green');
-
-            } catch (error) {
-                console.error("An error occurred during quiz generation:", error);
-                showNotification(`A processing error occurred. Check the console.`, 'red');
-            } finally {
-                setUIState(false);
+        if (imageData) {
+            if (aiResponse.includes("[IMAGE_HERE]")) {
+                aiResponse = aiResponse.replace("[IMAGE_HERE]", imgHtml);
+            } else if (mode === 'exam' && aiResponse.includes("SECTION C")) {
+                aiResponse = aiResponse.replace(/(SECTION C:.*?)(\n|$)/i, `$1<br>${imgHtml}<br>`);
+            } else {
+                aiResponse += `<hr class="my-8">${imgHtml}`;
             }
         }
-    </script>
 
+        loader.classList.add('hidden');
+        output.classList.remove('hidden');
+        output.innerHTML = aiResponse;
+
+    } catch (error) {
+        loader.classList.add('hidden');
+        output.classList.remove('hidden');
+        output.innerHTML = `<p style="color:red"><b>ERROR:</b> ${error.message}</p>`;
+    }
+}
+
+function copyResult() {
+    const el = document.getElementById('outputBox');
+    const range = document.createRange();
+    range.selectNode(el);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    document.execCommand('copy');
+    alert("Copied!");
+}
+</script>
 </body>
-</html>
+    </html>
