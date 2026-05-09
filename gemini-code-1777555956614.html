@@ -347,7 +347,7 @@ async function executeAI(mode) {
         const level = (mode === 'exam' ? document.getElementById('examGrade')?.value : document.getElementById('noteLevel')?.value) || "Form";
         const subject = document.getElementById('examSubject')?.value || "General";
 
-        let systemRole = `You are a NECTA Examination Architect. 
+        let systemRole = `You are an Examination Architect. 
 CRITICAL: 
 1. DO NOT use markdown like asterisks or hashtags.
 2. Format your response in html only.
@@ -380,7 +380,7 @@ CRITICAL:
             const sub = document.getElementById('noteSubtopics').value;
             promptText = `Generate a short, simple and clear notes. Organise it in form of topic, subtopic, meaning and points by using html. use doted lists <ul></ul> for points and tables <table></table> where useful. Context: Level: ${level}, Topic: ${topic}, Sub-topics: ${sub}. Use <h3> and <ul> tags. Refer to images if provided.`;
         } else if (mode === 'solve') {
-            promptText = `Solve all questions from the images and give answers only. Use <ol></ol> tag, and <table></table> tag wherever applicable.`;
+            promptText = `Solve all questions from the images. Use <ol></ol> tag, and <table></table> tag wherever applicable.`;
         }
 
         // Gemini Vision Payload: Combine text and image
