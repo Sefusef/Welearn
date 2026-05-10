@@ -225,7 +225,6 @@ async function sendChatMessage() {
     const msg = input.value.trim();
     if(!msg) return;
 
-    // Append user message
     box.innerHTML += `<div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none shadow-md max-w-[85%] self-end ml-auto text-sm">${msg}</div>`;
     input.value = '';
     box.scrollTop = box.scrollHeight;
@@ -233,25 +232,25 @@ async function sendChatMessage() {
 
     try {
         if (!puter.auth.isSignedIn()) await puter.auth.signIn();
-        
-        // Fixed: Ensure the model string is valid and response is accessed correctly
         const response = await puter.ai.chat(
-            [{ role: "system", content: "Your name is W. You are an expert academic assistant for Tanzanian teachers. Provide helpful, concise advice." }, 
+            [{ role: "system", content: "Your name is W. You are an expert academic assistant for Tanzanian teachers." }, 
              { role: "user", content: msg }],
-            { model: 'gpt-4o' }
+            { model: 'meta-llama/llama-3.3-70b-instruct' }
         );
-        
         loader.classList.add('hidden');
         
-        // Fixed undefined: access the content safely
-        const content = response?.message?.content || "I'm sorry, I couldn't process that.";
+        // Fixed: Check if message exists before accessing content to prevent 'undefined'
+        if (response && response.message && response.message.content) {
+            box.innerHTML += `<div class="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] text-sm"><b>W:</b> ${response.message.content}</div>`;
+        } else {
+            box.innerHTML += `<div class="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] text-sm text-red-500"><b>W:</b> Error: I received an empty response.</div>`;
+        }
         
-        box.innerHTML += `<div class="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] text-sm"><b>W:</b> ${content}</div>`;
         box.scrollTop = box.scrollHeight;
     } catch(e) {
         console.error("Chat Error:", e);
         loader.classList.add('hidden');
-        box.innerHTML += `<div class="bg-red-50 text-red-600 border p-3 rounded-2xl text-xs">Error: Could not reach W. Please try again.</div>`;
+        box.innerHTML += `<div class="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] text-sm text-red-500"><b>W:</b> Sorry, I encountered an error.</div>`;
     }
 }
 
@@ -306,7 +305,7 @@ async function executeAI(mode) {
         let fileInput = document.getElementById(mode === 'exam' ? 'examImages' : mode === 'notes' ? 'noteImages' : 'solveImage');
 
         if (fileInput && fileInput.files.length > 0) {
-            statusLabel.innerText = "Processing Image for Gemini...";
+            statusLabel.innerText = "Processing Image for Llama...";
             imageData = await preprocessImages(fileInput.files);
         }
 
@@ -360,10 +359,10 @@ CRITICAL:
 
         const response = await puter.ai.chat(
             [{ role: "system", content: systemRole }, { role: "user", content: userContent }],
-            { model: 'gpt-4o' }
+            { model: 'google/gemini-3-flash-preview' }
         );
 
-        let aiResponse = response.message.content;
+        let aiResponse = response && response.message ? response.message.content : "No response generated.";
         const imgHtml = imageData ? `<div class="my-6 border-2 border-black p-2 text-center" contenteditable="false"><img src="${imageData}" class="mx-auto max-h-[450px]"></div>` : "";
 
         if (imageData) {
@@ -398,4 +397,4 @@ function copyResult() {
 }
 </script>
 </body>
-                                                                                                            </html>
+</html>
