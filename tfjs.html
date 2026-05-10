@@ -225,6 +225,7 @@ async function sendChatMessage() {
     const msg = input.value.trim();
     if(!msg) return;
 
+    // Append user message
     box.innerHTML += `<div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none shadow-md max-w-[85%] self-end ml-auto text-sm">${msg}</div>`;
     input.value = '';
     box.scrollTop = box.scrollHeight;
@@ -232,16 +233,25 @@ async function sendChatMessage() {
 
     try {
         if (!puter.auth.isSignedIn()) await puter.auth.signIn();
+        
+        // Fixed: Ensure the model string is valid and response is accessed correctly
         const response = await puter.ai.chat(
-            [{ role: "system", content: "Your name is W. You are an expert academic assistant for Tanzanian teachers." }, 
+            [{ role: "system", content: "Your name is W. You are an expert academic assistant for Tanzanian teachers. Provide helpful, concise advice." }, 
              { role: "user", content: msg }],
-            { model: 'google/gemini-3.0-flash-preview' }
+            { model: 'gpt-4o' }
         );
+        
         loader.classList.add('hidden');
-        box.innerHTML += `<div class="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] text-sm"><b>W:</b> ${response.message.content}</div>`;
+        
+        // Fixed undefined: access the content safely
+        const content = response?.message?.content || "I'm sorry, I couldn't process that.";
+        
+        box.innerHTML += `<div class="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] text-sm"><b>W:</b> ${content}</div>`;
         box.scrollTop = box.scrollHeight;
     } catch(e) {
+        console.error("Chat Error:", e);
         loader.classList.add('hidden');
+        box.innerHTML += `<div class="bg-red-50 text-red-600 border p-3 rounded-2xl text-xs">Error: Could not reach W. Please try again.</div>`;
     }
 }
 
@@ -350,7 +360,7 @@ CRITICAL:
 
         const response = await puter.ai.chat(
             [{ role: "system", content: systemRole }, { role: "user", content: userContent }],
-            { model: 'google/gemini-2.5-flash' }
+            { model: 'gpt-4o' }
         );
 
         let aiResponse = response.message.content;
@@ -388,4 +398,4 @@ function copyResult() {
 }
 </script>
 </body>
-    </html>
+                                                                                                            </html>
